@@ -1,0 +1,52 @@
+.navbar {
+    width: 100%;
+    padding: 1rem 2rem;
+    background-color: #1a1a1a;
+    color: white;
+}
+
+.navbar_box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title h1 {
+    cursor: pointer;
+    margin: 0;
+}
+
+.menu {
+    display: flex;
+    gap: 2rem;
+}
+
+.link {
+    color: #cccccc;
+    transition: 0.3s;
+}
+
+.link:hover {
+    color: white;
+}
+
+.button {
+    padding: 0.5rem 1rem;
+    background-color: #8a2be2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.connected {
+    background-color: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+}
+
+.error {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
+}

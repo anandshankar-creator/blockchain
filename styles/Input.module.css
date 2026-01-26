@@ -1,0 +1,17 @@
+.input {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.input p {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.inputData {
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+}

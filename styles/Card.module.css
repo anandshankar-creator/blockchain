@@ -1,0 +1,37 @@
+.card {
+    background-color: #232323;
+    padding: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.imageBox {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cardData h3 {
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
+
+.address {
+    color: #888;
+    font-size: 0.9rem;
+}
