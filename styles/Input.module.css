@@ -1,0 +1,35 @@
+.input {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+.input p {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.inputData {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.inputData:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(155, 31, 233, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.inputData::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}

@@ -1,0 +1,30 @@
+# 📋 Project Status: Decentralized Voting dApp
+Last Updated: 2026-01-27
+
+## 🚀 Recent Accomplishments (Mobile Optimization & Build Fixes)
+1. **Build Error Resolution**:
+   - Fixed `VotingContext` and `VotingProvider` export issues in `context/Voter.js`.
+   - Verified successful build with `npm run build`.
+
+2. **Mobile Wallet Connection (MetaMask SDK)**:
+   - **Upgrade**: Migrated from Web3Modal to **MetaMask SDK**.
+   - **Direct Linking**: Enabled direct "Chrome -> MetaMask App" connectivity on Android.
+   - **Improved UX**: Users no longer see generic wallet lists; clicking "Connect" triggers the MetaMask app directly for address fetching and transaction signing.
+   - **Persistence**: Fixed issues where mobile connections were lost during app switching.
+
+3. **Deployment**:
+   - Pushed all fixes to GitHub `main` branch.
+   - Vercel auto-deployment is active with the latest build-ready code.
+
+## 🐛 Resolved Issues
+1. **Attempted Import Error**: Fixed "Attempted import error: 'VotingContext' is not exported" which was breaking the Vercel build.
+2. **Mobile Redirects**: Eliminated the need to manually switch browsers; the app now attempts to handle deep linking via MetaMask SDK.
+
+## 🛠 Technical Notes
+- **Library Change**: Installed `@metamask/sdk` and removed old `web3modal` dependencies.
+- **Provider Management**: Updated `context/Voter.js` to use the SDK's provider for all chain interactions.
+- **RPC**: Using `https://rpc.sepolia.org` for read-only data fetching to ensure list visibility even when disconnected.
+
+## 📝 Next Steps
+1. **User Testing**: verify candidate registration and gasless voting flow on Android Chrome.
+2. **Relayer Check**: Ensure the `/api/relay` endpoint remains compatible with the SDK's signature format (it should be, as it still uses EIP-712).

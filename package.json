@@ -1,0 +1,28 @@
+{
+  "name": "pro",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@metamask/sdk": "^0.34.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "@web3modal/ethers": "^5.1.11",
+    "axios": "^1.6.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
+    "ipfs-http-client": "^60.0.1",
+    "next": "14.1.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "eslint": "^9.39.2",
+    "hardhat": "^2.22.0"
+  }
+}

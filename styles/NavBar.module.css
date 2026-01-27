@@ -1,0 +1,159 @@
+/* Base Navbar (Top Bar - holds Logo & Connect everywhere, links on Desktop) */
+.navbar {
+    width: 100%;
+    padding: 1rem 3rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    justify-content: center;
+}
+
+.navbar_box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1400px;
+}
+
+.title h1 {
+    cursor: pointer;
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Desktop Navigation Links */
+.menu {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+}
+
+.link {
+    color: var(--text-secondary);
+    transition: 0.3s;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.link:hover,
+.activeLink {
+    color: var(--text-primary);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.button {
+    padding: 0.6rem 1.2rem;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.button:hover {
+    background-color: var(--accent-hover);
+}
+
+.connected {
+    background: var(--background-surface);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-family: monospace;
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+}
+
+.error {
+    color: #ff4d4d;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+/* Mobile Bottom Navigation (Hidden on Desktop) */
+.mobileBottomNav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--nav-bg);
+    border-top: 1px solid var(--card-border);
+    justify-content: space-around;
+    padding: 0.8rem 0;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+.navItem svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    transition: all 0.2s;
+}
+
+.navItem.active {
+    color: var(--text-primary);
+}
+
+.navItem.active svg {
+    fill: var(--accent-color);
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 5px var(--accent-color));
+}
+
+/* Hide Hamburger Toggle - we are using Bottom Nav now */
+.mobile_toggle {
+    display: none;
+}
+
+.bar {
+    width: 100%;
+    height: 3px;
+    background-color: white;
+    border-radius: 3px;
+    transition: 0.4s;
+}
+
+/* Responsive Logic */
+@media screen and (max-width: 900px) {
+    .navbar {
+        padding: 1rem;
+    }
+
+    .menu {
+        display: none;
+        /* Hide desktop menu on mobile */
+    }
+
+    .mobileBottomNav {
+        display: flex;
+        /* Show bottom nav on mobile */
+    }
+
+    /* On mobile, top bar only shows Logo + Connect */
+    .navbar_box {
+        justify-content: space-between;
+    }
+}

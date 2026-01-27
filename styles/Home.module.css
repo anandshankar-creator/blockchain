@@ -1,0 +1,83 @@
+.home {
+    min-height: 100vh;
+    padding-bottom: 6rem;
+    /* Space for bottom nav */
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.header {
+    padding: 4rem 1.5rem 2rem;
+    /* Adjusted default padding */
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    max-width: 100vw;
+    /* Prevent horizontal overflow */
+    height: 600px;
+    background: radial-gradient(circle, rgba(155, 31, 233, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    z-index: -1;
+    filter: blur(60px);
+}
+
+.header_content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    /* Solid white */
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.header_content p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.container {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.card_container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 3rem;
+    padding: 0 0.5rem;
+    /* Safe padding for cards */
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    .header {
+        padding: 3rem 1rem 1rem;
+    }
+
+    .header_content h1 {
+        font-size: 2.2rem;
+        /* Better fit for mobile */
+    }
+
+    .container {
+        padding: 0.5rem 0.5rem 6rem;
+        /* Extra bottom padding */
+    }
+
+    .card_container {
+        grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
+        gap: 1.5rem;
+    }
+}

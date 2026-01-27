@@ -1,0 +1,50 @@
+.voterList {
+    width: 100%;
+    /* Removed background-color to use global gradient */
+    min-height: 100vh;
+    padding-top: 2rem;
+}
+
+@media screen and (max-width: 900px) {
+    .voterList {
+        padding-top: 0;
+    }
+}
+
+.voterList__container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.voterList__header h1 {
+    font-size: 3.5rem;
+    margin-bottom: 3rem;
+    color: var(--text-primary);
+    font-weight: 800;
+    text-align: center;
+}
+
+.voterList__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 3rem;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    .voterList__header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .voterList__container {
+        padding: 2rem 1rem;
+    }
+
+    .voterList__list {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
