@@ -34,7 +34,7 @@ export const VotingProvider = ({ children }) => {
         }
     }, []);
 
-    const RPC_URL = "https://rpc.sepolia.org"; // Use a public RPC for read-only data
+    const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"; // More stable public RPC
 
     const fetchContract = (signerOrProvider) => new ethers.Contract(VotingAddress, VotingAddressABI, signerOrProvider);
 
@@ -136,15 +136,23 @@ export const VotingProvider = ({ children }) => {
     // DATA FETCHING
     const getNewCandidate = async () => {
         setIsLoading(true);
+        setError("");
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
 
             const allCandidate = await contract.getCandidate();
+            console.log("Fetched raw candidates:", allCandidate);
 
-            const data = await Promise.all(allCandidate.map(async (el) => {
-                return contract.getCandidateData(el);
-            }));
+            const data = [];
+            for (const el of allCandidate) {
+                try {
+                    const singleData = await contract.getCandidateData(el);
+                    data.push(singleData);
+                } catch (err) {
+                    console.error("Error fetching data for candidate:", el, err);
+                }
+            }
 
             const formattedData = data.map(item => {
                 let imageUrl = item[3];
@@ -165,10 +173,12 @@ export const VotingProvider = ({ children }) => {
                 };
             });
 
+            console.log("Formatted candidate data:", formattedData);
             setCandidateArray(formattedData);
             setCandidateLength(allCandidate.length);
         } catch (error) {
             console.log("Error fetching candidates", error);
+            setError("Failed to load candidates. Please refresh.");
         }
         setIsLoading(false);
     };
@@ -180,30 +190,37 @@ export const VotingProvider = ({ children }) => {
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
 
             const voterListData = await contract.getVoterList();
+            console.log("Fetched raw voter list:", voterListData);
             setVoterAddress(voterListData);
             setVoterLength(voterListData.length);
 
-            const allVoters = await Promise.all(voterListData.map(async (el) => {
-                const singleVoterData = await contract.getVoterData(el);
+            const allVoters = [];
+            for (const el of voterListData) {
+                try {
+                    const singleVoterData = await contract.getVoterData(el);
 
-                let imageUrl = singleVoterData[2];
-                if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('ipfs')) {
-                    if (imageUrl.startsWith('Qm')) {
-                        imageUrl = `https://gateway.pinata.cloud/ipfs/${imageUrl}`;
+                    let imageUrl = singleVoterData[2];
+                    if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('ipfs')) {
+                        if (imageUrl.startsWith('Qm')) {
+                            imageUrl = `https://gateway.pinata.cloud/ipfs/${imageUrl}`;
+                        }
                     }
-                }
 
-                return {
-                    id: singleVoterData[0].toString(),
-                    name: singleVoterData[1],
-                    image: imageUrl,
-                    address: singleVoterData[3],
-                    ipfs: singleVoterData[4],
-                    voted: singleVoterData[5],
-                    allowed: singleVoterData[6].toString()
+                    allVoters.push({
+                        id: singleVoterData[0].toString(),
+                        name: singleVoterData[1],
+                        image: imageUrl,
+                        address: singleVoterData[3],
+                        ipfs: singleVoterData[4],
+                        voted: singleVoterData[5],
+                        allowed: singleVoterData[6].toString()
+                    });
+                } catch (err) {
+                    console.error("Error fetching data for voter:", el, err);
                 }
-            }));
+            }
 
+            console.log("Formatted voter data:", allVoters);
             setVoterArray(allVoters);
         } catch (error) {
             console.log("Error fetching voters", error);
