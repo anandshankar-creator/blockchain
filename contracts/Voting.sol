@@ -6,8 +6,13 @@ import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 contract Voting is ERC2771Context {
     uint256 public _voterId;
     uint256 public _candidateId;
+    uint256 public electionVersion;
 
     address public votingOrganizer;
+
+    // Mapping to track registration in the current election version
+    mapping(address => uint256) public voterElectionVersion;
+    mapping(address => uint256) public candidateElectionVersion;
 
     // Candidate for voting
     struct Candidate {
@@ -62,10 +67,12 @@ contract Voting is ERC2771Context {
 
     constructor(address trustedForwarder) ERC2771Context(trustedForwarder) {
         votingOrganizer = _msgSender();
+        electionVersion = 1;
     }
 
     function setCandidate(address _address, string memory _age, string memory _name, string memory _image, string memory _ipfs) public {
         require(votingOrganizer == _msgSender(), "Only organizer can create a candidate");
+        require(candidateElectionVersion[_address] < electionVersion, "Candidate already registered in current election");
 
         _candidateId++;
         uint256 idNumber = _candidateId;
@@ -80,6 +87,7 @@ contract Voting is ERC2771Context {
         candidate.ipfs = _ipfs;
 
         candidateAddress.push(_address);
+        candidateElectionVersion[_address] = electionVersion;
 
         emit CandidateCreate(
             idNumber,
@@ -119,6 +127,7 @@ contract Voting is ERC2771Context {
     // Voter Section
     function setVoter(address _address, string memory _name, string memory _image, string memory _ipfs) public {
         require(votingOrganizer == _msgSender(), "Only organizer can create a voter");
+        require(voterElectionVersion[_address] < electionVersion, "Voter already registered in current election");
 
         _voterId++;
         uint256 idNumber = _voterId;
@@ -134,6 +143,7 @@ contract Voting is ERC2771Context {
         voter.voter_ipfs = _ipfs;
 
         votersAddress.push(_address);
+        voterElectionVersion[_address] = electionVersion;
 
         emit VoterCreated(
             idNumber,
@@ -148,6 +158,7 @@ contract Voting is ERC2771Context {
     }
 
     function giveVote(address _candidateAddress, uint256 _candidateVoteId) public {
+        require(voterElectionVersion[_msgSender()] == electionVersion, "You are not registered for the current election");
         Voter storage voter = voters[_msgSender()];
         require(!voter.voter_voted, "You have already voted");
         require(voter.voter_allowed != 0, "You have no right to vote");
@@ -198,5 +209,9 @@ contract Voting is ERC2771Context {
         // Reset Counters
         _candidateId = 0;
         _voterId = 0;
+
+        // Increment Election Version to invalidate old registrations
+        electionVersion++;
     }
+
 }
