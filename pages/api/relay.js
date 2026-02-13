@@ -41,19 +41,19 @@ export default async function handler(req, res) {
             signature: signature
         };
 
-        // 2. Logic Guarantee: Simulation
+        // 2. Logic Guarantee: Simulation (Simulate THROUGH the forwarder)
         try {
-            const decodedData = votingInterface.decodeFunctionData("giveVote", request.data);
-            // Simulate as the user to catch registration/double-voting errors
-            await votingContract.giveVote.staticCall(decodedData[0], decodedData[1], { from: request.from });
+            // This tests everything: signature, nonce, and the actual vote logic
+            await forwarder.execute.staticCall(forwardRequest, {
+                value: BigInt(request.value)
+            });
         } catch (simError) {
             console.error("Simulation error:", simError);
 
             // Extract the most readable error message
-            let reason = "Execution would fail (Check if you are registered)";
+            let reason = "Execution would fail (Check if you are registered and haven't voted)";
             if (simError.reason) reason = simError.reason;
             else if (simError.message) {
-                // Try to find the revert reason in the message string
                 const match = simError.message.match(/reverted with reason string '(.+)'/);
                 if (match) reason = match[1];
             }
