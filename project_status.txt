@@ -1,30 +1,29 @@
 # 📋 Project Status: Decentralized Voting dApp
 Last Updated: 2026-02-04
 
-## 🚀 Recent Accomplishments (Duplicate Prevention & Redeployment)
-1. **Duplicate Registration Prevention**:
-   - Modified `Voting.sol` to block duplicate registrations for candidates and voters.
-   - Introduced `electionVersion` to track sessions. Each reset increments this version, effectively "clearing" old registration data while allowing re-registration in new sessions.
-   - Added validation in `giveVote` to ensure only voters registered for the *current* election version can vote.
+## 🚀 Recent Accomplishments (Concurrency & Scalability)
+1. **Concurrent Voting Fix**:
+   - Implemented a **Global Submission Queue** in the relayer API (`/api/relay`).
+   - Added **Explicit Nonce Management** using the `pending` transaction tag to prevent collisions when multiple voters cast votes at the exact same millisecond.
+   - Optimized the relayer to send transactions immediately and wait for confirmations in the background, drastically increasing the voting throughput.
 
-2. **Contract Redeployment (Sepolia)**:
+2. **Duplicate Registration Prevention**:
+   - Modified `Voting.sol` to block duplicate registrations for candidates and voters.
+   - Introduced `electionVersion` to track sessions.
+
+3. **Contract Redeployment (Sepolia)**:
    - Successfully redeployed both **Voting** and **Forwarder** contracts.
    - New Voting Address: `0x12e323fc58BEE23E5B3431469Fba3653514E166d`
    - New Forwarder Address: `0x19a81c97222FD08D1AC1008aEE4A2568c774131b`
-   - ABIs and constants automatically updated in the frontend.
-
-3. **Build & Connectivity**:
-   - Verified that the MetaMask SDK remains compatible with the new contract logic.
-   - Confirmed frontend connectivity with the new deployment.
 
 ## 🐛 Resolved Issues
-1. **Double Registration**: Fixed the bug where the same address could be registered multiple times, causing duplicates in the UI and overwriting previous names.
-2. **Session Persistence**: Fixed issue where old voters could potentially vote in a new election if they hadn't voted in the previous one (since mappings weren't cleared). Now, registration is tied to the current version.
+1. **Nonce Collisions**: Fixed the issue where only one vote would get approved if multiple people voted simultaneously. The relayer now correctly manages nonces for rapid-fire transactions.
+2. **Double Registration**: Fixed the bug where the same address could be registered multiple times.
+3. **Session Persistence**: Registration is now tied to the current `electionVersion`.
 
 ## 🛠 Technical Notes
-- **Version Tracking**: Used `mapping(address => uint256)` for `voterElectionVersion` to avoid expensive array loops or mapping clears.
-- **Gas Efficiency**: The `resetElection` function remains gas-efficient as it only increments a counter and clears arrays.
+- **Relayer Concurrency**: The relayer now uses a promise-based mutex to ensure that `provider.getTransactionCount(..., "pending")` is called and the transaction is submitted before the next request starts its submission phase.
 
 ## 📝 Next Steps
-1. **Full Flow Test**: Register a candidate, register a voter, and cast a gasless vote to verify everything is working perfectly on the new deployment.
-2. **UI Error Handling**: Ensure the "Already registered" error message displays clearly in the UI.
+1. **Stress Test**: Have multiple users vote at once to verify the queue is handling them correctly.
+2. **UI Improvements**: Add a "Voting in progress..." state to the button to prevent accidental double-clicks from the same user.

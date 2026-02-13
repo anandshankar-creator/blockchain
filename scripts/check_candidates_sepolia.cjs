@@ -3,7 +3,7 @@ const fs = require("fs");
 
 async function main() {
     const RPC_URL = "https://sepolia.infura.io/v3/af2d32753a144776b9a6d37364aaadd5";
-    const VotingAddress = "0xC4c44BbD553E9eDe19EA93E0E96Df81E5037c4Af";
+    const VotingAddress = "0x12e323fc58BEE23E5B3431469Fba3653514E166d";
     const VotingABI = JSON.parse(fs.readFileSync("c:/Users/ACER/OneDrive/Documents/Desktop/pro/context/Voting.json")).abi;
 
     const provider = new ethers.JsonRpcProvider(RPC_URL);

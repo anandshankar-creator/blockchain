@@ -380,21 +380,35 @@ export const VotingProvider = ({ children }) => {
                     signature: signature
                 })
             });
-
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.error || "Relay Request Failed");
+                throw new Error(result.message || result.error || "Relay Failed");
             }
 
-            console.log("Voted successfully! Tx Hash:", result.txHash);
-            alert("Voted Successfully (Gas Paid by Relayer)!");
-            router.push('/voterList');
+            console.log("Vote Pushed! TX:", result.txHash);
+
+            // 1. Show processing state
+            setIsLoading(true);
+            setError("Broadcast successful! Locking your vote into the blockchain...");
+
+            // 2. WAIT FOR TRUE CONFIRMATION
+            const receipt = await provider.waitForTransaction(result.txHash);
+
+            if (receipt.status === 0) {
+                throw new Error("Blockchain execution failed. Vote not counted.");
+            }
+
+            alert("✓ Success! Your vote is officially recorded on the blockchain.");
+            window.location.reload();
 
         } catch (error) {
-            console.log("Voting Error:", error);
-            alert("Voting Failed: " + (error.reason || error.message));
-        };
+            console.log("Voting Error:", error.message);
+            setError(error.message);
+            alert("Voting Error: " + error.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const resetElection = async () => {
