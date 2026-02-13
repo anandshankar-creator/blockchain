@@ -1,29 +1,31 @@
 # 📋 Project Status: Decentralized Voting dApp
-Last Updated: 2026-02-04
+Last Updated: 2026-02-14
 
-## 🚀 Recent Accomplishments (Concurrency & Scalability)
-1. **Concurrent Voting Fix**:
-   - Implemented a **Global Submission Queue** in the relayer API (`/api/relay`).
-   - Added **Explicit Nonce Management** using the `pending` transaction tag to prevent collisions when multiple voters cast votes at the exact same millisecond.
-   - Optimized the relayer to send transactions immediately and wait for confirmations in the background, drastically increasing the voting throughput.
-
-2. **Duplicate Registration Prevention**:
-   - Modified `Voting.sol` to block duplicate registrations for candidates and voters.
-   - Introduced `electionVersion` to track sessions.
-
-3. **Contract Redeployment (Sepolia)**:
-   - Successfully redeployed both **Voting** and **Forwarder** contracts.
-   - New Voting Address: `0x12e323fc58BEE23E5B3431469Fba3653514E166d`
-   - New Forwarder Address: `0x19a81c97222FD08D1AC1008aEE4A2568c774131b`
+## 🚀 Recent Accomplishments (Mobile & UI Enhancements)
+1. **Wallet Disconnect**:
+   - Implemented `disconnectWallet` using `sdk.terminate()` for a complete session logout on mobile devices.
+   - Added a red "Disconnect" button in the `NavBar`.
+2. **Relayer Logic Fixes**:
+   - Fixed "Logic Error: Unauthorized" by simulating transactions through the **Forwarder** contract instead of calling the Voting contract directly.
+   - Improved error reporting in the relayer to capture exact revert reasons from the blockchain.
+3. **Voting UX Improvements**:
+   - Added an "isLoading" state to the Vote buttons. The button now turns gray and shows **"Voting..."** to prevent double-clicks.
+   - Added specific error handling for MetaMask's `-32002` (request pending) error with helpful user instructions.
+4. **Site Stability**:
+   - Fixed React hydration and ReferenceErrors that were causing "White Screen" crashes on certain devices.
+   - Added safety checks for the Ethereum provider to prevent crashes when MetaMask is initializing.
 
 ## 🐛 Resolved Issues
-1. **Nonce Collisions**: Fixed the issue where only one vote would get approved if multiple people voted simultaneously. The relayer now correctly manages nonces for rapid-fire transactions.
-2. **Double Registration**: Fixed the bug where the same address could be registered multiple times.
-3. **Session Persistence**: Registration is now tied to the current `electionVersion`.
+1. **"Could not decode result data" (Mobile)**: Fixed by adding strict network validation before reading the nonce.
+2. **Button Double-Click Errors**: Resolved by locking the button UI during processing.
+3. **Session Stuck on Mobile**: Fixed by adding a session termination command to the logout process.
 
-## 🛠 Technical Notes
-- **Relayer Concurrency**: The relayer now uses a promise-based mutex to ensure that `provider.getTransactionCount(..., "pending")` is called and the transaction is submitted before the next request starts its submission phase.
+## � Current Blocker (To be resolved tomorrow)
+1. **Mobile Network Switch Loop**:
+   - **Issue**: On mobile devices (Chrome/Brave), clicking "Give Vote" sometimes triggers a loop: Chrome -> MetaMask (Network Switch) -> Chrome -> Message: "Please switch to Sepolia".
+   - **Current State**: We have implemented case-insensitive numeric comparisons and a 1-second synchronization delay, but the loop persists for some users.
+   - **Goal for next session**: Investigate the timing between the MetaMask SDK provider update and the browser app state to finalize the mobile handoff.
 
-## 📝 Next Steps
-1. **Stress Test**: Have multiple users vote at once to verify the queue is handling them correctly.
-2. **UI Improvements**: Add a "Voting in progress..." state to the button to prevent accidental double-clicks from the same user.
+## � Technical Notes
+- **Simulation**: Relayer simulation must always happen via `forwarder.execute.staticCall` to maintain the correct `_msgSender` context.
+- **Sync Delay**: Added `await new Promise(r => setTimeout(r, 1000))` in `switchNetwork` to combat slow mobile state synchronization.
