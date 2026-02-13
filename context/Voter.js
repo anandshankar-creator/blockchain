@@ -86,6 +86,14 @@ export const VotingProvider = ({ children }) => {
     const switchNetwork = async () => {
         try {
             const ethereum = sdk.getProvider();
+
+            // First check if we are ALREADY on Sepolia to avoid deep link loops on mobile
+            const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+            if (currentChainId === "0xaa36a7" || currentChainId === 11155111 || currentChainId === "11155111") {
+                console.log("Already on Sepolia");
+                return;
+            }
+
             await ethereum.request({
                 method: "wallet_switchEthereumChain",
                 params: [{ chainId: "0xaa36a7" }], // Sepolia Chain ID
@@ -285,6 +293,13 @@ export const VotingProvider = ({ children }) => {
         try {
             await switchNetwork();
             const provider = getProvider();
+
+            // Verify network
+            const network = await provider.getNetwork();
+            const chainIdRpc = await sdk.getProvider().request({ method: 'eth_chainId' });
+            const isSepolia = (network.chainId === 11155111n) || (chainIdRpc === "0xaa36a7");
+            if (!isSepolia) throw new Error("Please switch to Sepolia network and try again.");
+
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
 
@@ -306,6 +321,13 @@ export const VotingProvider = ({ children }) => {
         try {
             await switchNetwork();
             const provider = getProvider();
+
+            // Verify network
+            const network = await provider.getNetwork();
+            const chainIdRpc = await sdk.getProvider().request({ method: 'eth_chainId' });
+            const isSepolia = (network.chainId === 11155111n) || (chainIdRpc === "0xaa36a7");
+            if (!isSepolia) throw new Error("Please switch to Sepolia network and try again.");
+
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
 
@@ -328,8 +350,16 @@ export const VotingProvider = ({ children }) => {
             const provider = getProvider();
 
             // Verify we are actually on Sepolia (0xaa36a7)
+            // On mobile, provider.getNetwork() can sometimes be stale, so we double-check via RPC
             const network = await provider.getNetwork();
-            if (network.chainId !== 11155111n) {
+            const chainIdRpc = await sdk.getProvider().request({ method: 'eth_chainId' });
+
+            const isSepolia = (network.chainId === 11155111n) ||
+                (chainIdRpc === "0xaa36a7") ||
+                (chainIdRpc === "11155111") ||
+                (chainIdRpc === 11155111);
+
+            if (!isSepolia) {
                 throw new Error("Please switch your MetaMask network to Sepolia and try again.");
             }
 
