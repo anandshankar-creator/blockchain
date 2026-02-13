@@ -74,6 +74,28 @@
     color: var(--text-primary);
 }
 
+.connectedBox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.disconnectBtn {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.disconnectBtn:hover {
+    background: #cc0000;
+}
+
 .error {
     color: #ff4d4d;
     text-align: center;

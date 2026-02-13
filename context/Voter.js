@@ -66,13 +66,19 @@ export const VotingProvider = ({ children }) => {
             const accounts = await ethereum.request({ method: "eth_requestAccounts" });
             if (accounts && accounts.length) {
                 setCurrentAccount(accounts[0]);
-                // Automatically try to switch to Sepolia
+                // Ensure switched to Sepolia
                 await switchNetwork();
             }
         } catch (error) {
             console.log("Error connecting wallet:", error);
-            setError("Connection failed");
+            setError("Connection failed. Please open MetaMask.");
         }
+    };
+
+    const disconnectWallet = () => {
+        setCurrentAccount("");
+        // Optionally reload to clear all cached states
+        window.location.reload();
     };
 
     const switchNetwork = async () => {
@@ -316,6 +322,13 @@ export const VotingProvider = ({ children }) => {
 
             await switchNetwork();
             const provider = getProvider();
+
+            // Verify we are actually on Sepolia (0xaa36a7)
+            const network = await provider.getNetwork();
+            if (network.chainId !== 11155111n) {
+                throw new Error("Please switch your MetaMask network to Sepolia and try again.");
+            }
+
             const signer = await provider.getSigner();
             const userAddress = await signer.getAddress();
 
@@ -331,7 +344,6 @@ export const VotingProvider = ({ children }) => {
 
             const functionData = votingInterface.encodeFunctionData("giveVote", [candidateAddress, candidateId]);
 
-            const network = await provider.getNetwork();
             const chainId = network.chainId;
 
             const domain = {
@@ -429,6 +441,24 @@ export const VotingProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        if (!sdk) return;
+        const ethereum = sdk.getProvider();
+
+        const handleAccountChanged = (accounts) => {
+            if (accounts.length > 0) {
+                setCurrentAccount(accounts[0]);
+            } else {
+                setCurrentAccount("");
+            }
+        };
+
+        const handleChainChanged = () => {
+            window.location.reload();
+        };
+
+        ethereum.on("accountsChanged", handleAccountChanged);
+        ethereum.on("chainChanged", handleChainChanged);
+
         try {
             getNewCandidate();
             getAllVoterData();
@@ -436,13 +466,19 @@ export const VotingProvider = ({ children }) => {
         } catch (error) {
             console.log("Error in Initial Data Fetch:", error)
         }
-    }, [sdk]); // Re-run check when SDK is ready
+
+        return () => {
+            ethereum.removeListener("accountsChanged", handleAccountChanged);
+            ethereum.removeListener("chainChanged", handleChainChanged);
+        };
+    }, [sdk]);
 
     return (
         <VotingContext.Provider
             value={{
                 checkIfWalletIsConnected,
                 connectWallet,
+                disconnectWallet,
                 uploadToIPFS,
                 uploadToIPFSCandidate,
                 setCandidate,

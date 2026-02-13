@@ -5,7 +5,7 @@ import { VotingContext } from '../context/Voter';
 import styles from '../styles/NavBar.module.css';
 
 const NavBar = () => {
-    const { connectWallet, error, currentAccount, resetElection } = useContext(VotingContext);
+    const { connectWallet, disconnectWallet, error, currentAccount, resetElection } = useContext(VotingContext);
     const router = useRouter();
 
     const isActive = (path) => router.pathname === path ? styles.active : '';
@@ -49,8 +49,16 @@ const NavBar = () => {
                     {/* Connect Wallet Button (Visible on both, but positioned differently via CSS) */}
                     <div className={styles.connect}>
                         {currentAccount ? (
-                            <div className={styles.connected}>
-                                {currentAccount.slice(0, 6)}...{currentAccount.slice(-4)}
+                            <div className={styles.connectedBox}>
+                                <div className={styles.connected}>
+                                    {currentAccount.slice(0, 6)}...{currentAccount.slice(-4)}
+                                </div>
+                                <button
+                                    onClick={() => disconnectWallet()}
+                                    className={styles.disconnectBtn}
+                                >
+                                    Disconnect
+                                </button>
                             </div>
                         ) : (
                             <button onClick={() => connectWallet()} className={styles.button}>Connect</button>
