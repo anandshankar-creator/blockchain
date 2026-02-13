@@ -40,17 +40,18 @@ const Card = ({ image, name, role, address, handleClick, voteCount, showVoteBtn 
                 {showVoteBtn === true && (
                     <button
                         onClick={handleClick}
+                        disabled={isLoading}
                         style={{
                             marginTop: '1rem',
                             padding: '10px 20px',
-                            backgroundColor: '#9b1fe9',
+                            backgroundColor: isLoading ? '#ccc' : '#9b1fe9',
                             color: 'white',
                             border: 'none',
                             borderRadius: '5px',
-                            cursor: 'pointer'
+                            cursor: isLoading ? 'not-allowed' : 'pointer'
                         }}
                     >
-                        Give Vote
+                        {isLoading ? "Voting..." : "Give Vote"}
                     </button>
                 )}
             </div>

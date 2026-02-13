@@ -320,6 +320,8 @@ export const VotingProvider = ({ children }) => {
 
     const giveVote = async (id) => {
         try {
+            setIsLoading(true);
+            setError("");
             console.log("Voting for:", id);
 
             await switchNetwork();
@@ -377,7 +379,16 @@ export const VotingProvider = ({ children }) => {
                 data: functionData
             };
 
-            const signature = await signer.signTypedData(domain, types, req);
+            // Capture signature (this pops up MetaMask)
+            let signature;
+            try {
+                signature = await signer.signTypedData(domain, types, req);
+            } catch (sigError) {
+                if (sigError.code === -32002 || (sigError.message && sigError.message.includes("-32002"))) {
+                    throw new Error("A signature request is already pending in MetaMask. Please open your MetaMask app and confirm it.");
+                }
+                throw sigError;
+            }
 
             const serializedReq = {
                 ...req,
@@ -403,7 +414,6 @@ export const VotingProvider = ({ children }) => {
             console.log("Vote Pushed! TX:", result.txHash);
 
             // 1. Show processing state
-            setIsLoading(true);
             setError("Broadcast successful! Locking your vote into the blockchain...");
 
             // 2. WAIT FOR TRUE CONFIRMATION

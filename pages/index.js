@@ -39,6 +39,7 @@ const Home = () => {
                                 address={el._address}
                                 voteCount={el.voteCount}
                                 showVoteBtn={true}
+                                isLoading={isLoading}
                                 handleClick={() => giveVote({ id: el.candidateId, address: el._address })}
                             />
                         ))}
