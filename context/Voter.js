@@ -455,6 +455,7 @@ export const VotingProvider = ({ children }) => {
     useEffect(() => {
         if (!sdk) return;
         const ethereum = sdk.getProvider();
+        if (!ethereum) return;
 
         const handleAccountChanged = (accounts) => {
             if (accounts.length > 0) {
@@ -480,8 +481,10 @@ export const VotingProvider = ({ children }) => {
         }
 
         return () => {
-            ethereum.removeListener("accountsChanged", handleAccountChanged);
-            ethereum.removeListener("chainChanged", handleChainChanged);
+            if (ethereum.removeListener) {
+                ethereum.removeListener("accountsChanged", handleAccountChanged);
+                ethereum.removeListener("chainChanged", handleChainChanged);
+            }
         };
     }, [sdk]);
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from '../styles/Card.module.css';
 
-const Card = ({ image, name, role, address, handleClick, voteCount, showVoteBtn }) => {
+const Card = ({ image, name, role, address, handleClick, voteCount, showVoteBtn, isLoading }) => {
     // Helper to resolve potential IPFS raw hashes or broken URLs
     // Helper to resolve potential IPFS raw hashes or broken URLs
     const resolveImage = (url) => {
