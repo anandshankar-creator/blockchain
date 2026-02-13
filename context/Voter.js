@@ -76,8 +76,10 @@ export const VotingProvider = ({ children }) => {
     };
 
     const disconnectWallet = () => {
+        if (sdk) {
+            sdk.terminate();
+        }
         setCurrentAccount("");
-        // Optionally reload to clear all cached states
         window.location.reload();
     };
 
