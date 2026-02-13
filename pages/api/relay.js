@@ -44,9 +44,21 @@ export default async function handler(req, res) {
         // 2. Logic Guarantee: Simulation
         try {
             const decodedData = votingInterface.decodeFunctionData("giveVote", request.data);
+            // Simulate as the user to catch registration/double-voting errors
             await votingContract.giveVote.staticCall(decodedData[0], decodedData[1], { from: request.from });
         } catch (simError) {
-            return res.status(400).json({ message: `Logic Error: ${simError.reason || "Unauthorized or already voted."}` });
+            console.error("Simulation error:", simError);
+
+            // Extract the most readable error message
+            let reason = "Execution would fail (Check if you are registered)";
+            if (simError.reason) reason = simError.reason;
+            else if (simError.message) {
+                // Try to find the revert reason in the message string
+                const match = simError.message.match(/reverted with reason string '(.+)'/);
+                if (match) reason = match[1];
+            }
+
+            return res.status(400).json({ message: `Logic Error: ${reason}` });
         }
 
         // 3. Ultra-Fast Parallel Nonce Management
