@@ -87,17 +87,22 @@ export const VotingProvider = ({ children }) => {
         try {
             const ethereum = sdk.getProvider();
 
-            // First check if we are ALREADY on Sepolia to avoid deep link loops on mobile
+            // First check if we are ALREADY on Sepolia
             const currentChainId = await ethereum.request({ method: 'eth_chainId' });
-            if (currentChainId === "0xaa36a7" || currentChainId === 11155111 || currentChainId === "11155111") {
+
+            // Robust numeric check (handles 0xAA36A7 vs 0xaa36a7)
+            if (parseInt(currentChainId, 16) === 11155111) {
                 console.log("Already on Sepolia");
                 return;
             }
 
             await ethereum.request({
                 method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0xaa36a7" }], // Sepolia Chain ID
+                params: [{ chainId: "0xaa36a7" }],
             });
+
+            // Wait 1 second for mobile sync after returning to browser
+            await new Promise(r => setTimeout(r, 1000));
         } catch (switchError) {
             // This error code indicates that the chain has not been added to MetaMask.
             if (switchError.code === 4902) {
@@ -354,10 +359,8 @@ export const VotingProvider = ({ children }) => {
             const network = await provider.getNetwork();
             const chainIdRpc = await sdk.getProvider().request({ method: 'eth_chainId' });
 
-            const isSepolia = (network.chainId === 11155111n) ||
-                (chainIdRpc === "0xaa36a7") ||
-                (chainIdRpc === "11155111") ||
-                (chainIdRpc === 11155111);
+            const isSepolia = (Number(network.chainId) === 11155111) ||
+                (parseInt(chainIdRpc, 16) === 11155111);
 
             if (!isSepolia) {
                 throw new Error("Please switch your MetaMask network to Sepolia and try again.");
