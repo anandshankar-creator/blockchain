@@ -92,22 +92,24 @@ export const VotingProvider = ({ children }) => {
             const targetChainId = "0xaa36a7";
             const targetChainIdDecimal = 11155111;
 
-            // 1. Initial Check
             const currentChainId = await ethereum.request({ method: 'eth_chainId' });
             if (parseInt(currentChainId, 16) === targetChainIdDecimal) {
                 console.log("Already on Sepolia");
                 return;
             }
 
-            console.log("Switching to Sepolia...");
+            console.log("Switching to Sepolia logic started...");
+            setIsLoading(true);
+            setError("Opening MetaMask for network switch...");
+
             try {
                 await ethereum.request({
                     method: "wallet_switchEthereumChain",
                     params: [{ chainId: targetChainId }],
                 });
             } catch (switchError) {
-                // This error code indicates that the chain has not been added to MetaMask.
                 if (switchError.code === 4902) {
+                    setError("Adding Sepolia network...");
                     await ethereum.request({
                         method: "wallet_addEthereumChain",
                         params: [
@@ -124,32 +126,36 @@ export const VotingProvider = ({ children }) => {
                             },
                         ],
                     });
+                } else if (switchError.code === -32002) {
+                    setError("Request pending: Please open MetaMask and approve.");
+                    throw new Error("A request is already pending in MetaMask. Please open the app manually.");
                 } else {
                     throw switchError;
                 }
             }
 
-            // 2. POLLING FOR SYNC (Crucial for Mobile)
-            // On mobile, the promise above might resolve before the browser has actually "seen" the switch
             let attempts = 0;
-            const maxAttempts = 5;
+            const maxAttempts = 10;
             while (attempts < maxAttempts) {
-                console.log(`Checking network sync... attempt ${attempts + 1}/${maxAttempts}`);
+                console.log(`Syncing mobile network... attempt ${attempts + 1}/${maxAttempts}`);
                 const refreshedChainId = await ethereum.request({ method: 'eth_chainId' });
+
                 if (parseInt(refreshedChainId, 16) === targetChainIdDecimal) {
                     console.log("Network sync confirmed!");
-                    // Wait one extra moment for ethers provider to internalize the change
-                    await new Promise(r => setTimeout(r, 500));
+                    setError("");
+                    await new Promise(r => setTimeout(r, 1000));
                     return;
                 }
                 attempts++;
-                await new Promise(r => setTimeout(r, 2000)); // Longer wait on mobile
+                setError(`Synchronizing network (${attempts}/${maxAttempts})...`);
+                await new Promise(r => setTimeout(r, 1500));
             }
 
-            console.warn("Network switch requested but not confirmed by provider yet.");
+            throw new Error("Could not confirm network switch. Please check MetaMask manually.");
         } catch (error) {
             console.error("Error in switchNetwork:", error);
-            setError("Please switch to Sepolia network in your MetaMask app.");
+            setError(error.message || "Network switch failed");
+            setIsLoading(false);
             throw error;
         }
     };
@@ -378,24 +384,26 @@ export const VotingProvider = ({ children }) => {
 
             // Verify we are actually on Sepolia (0xaa36a7)
             // On mobile, provider.getNetwork() can sometimes be stale, so we double-check via RPC
-            const network = await provider.getNetwork();
-            const chainIdRpc = await sdk.getProvider().request({ method: 'eth_chainId' });
-
-            const isSepolia = (Number(network.chainId) === 11155111) ||
-                (parseInt(chainIdRpc, 16) === 11155111);
+            // Verify and Force Update Provider
+            let currentChainId = await sdk.getProvider().request({ method: 'eth_chainId' });
+            let isSepolia = (parseInt(currentChainId, 16) === 11155111);
 
             if (!isSepolia) {
-                // Try polling one more time if it's still not Sepolia
-                console.log("Still not showing Sepolia, one last poll...");
+                setError("Network mismatch. Retrying sync...");
                 await new Promise(r => setTimeout(r, 2000));
-                const lastCheck = await sdk.getProvider().request({ method: 'eth_chainId' });
-                if (parseInt(lastCheck, 16) !== 11155111) {
-                    throw new Error("Please ensure your MetaMask is on the Sepolia network.");
+                currentChainId = await sdk.getProvider().request({ method: 'eth_chainId' });
+                isSepolia = (parseInt(currentChainId, 16) === 11155111);
+
+                if (!isSepolia) {
+                    throw new Error("Mobile provider is still not seeing Sepolia. Please briefly open MetaMask and switch manually.");
                 }
             }
 
-            const signer = await provider.getSigner();
+            // Create fresh provider for signing
+            const browserProvider = new ethers.BrowserProvider(sdk.getProvider());
+            const signer = await browserProvider.getSigner();
             const userAddress = await signer.getAddress();
+            const network = await browserProvider.getNetwork();
 
             console.log("Preparing Gasless Vote...");
 
