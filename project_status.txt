@@ -19,13 +19,9 @@ Last Updated: 2026-02-14
 1. **"Could not decode result data" (Mobile)**: Fixed by adding strict network validation before reading the nonce.
 2. **Button Double-Click Errors**: Resolved by locking the button UI during processing.
 3. **Session Stuck on Mobile**: Fixed by adding a session termination command to the logout process.
+4. **Mobile Network Switch Loop**: Resolved by removing `window.location.reload()` on chain changes and implementing a robust polling mechanism in `switchNetwork` to ensure provider synchronization on mobile.
 
-## � Current Blocker (To be resolved tomorrow)
-1. **Mobile Network Switch Loop**:
-   - **Issue**: On mobile devices (Chrome/Brave), clicking "Give Vote" sometimes triggers a loop: Chrome -> MetaMask (Network Switch) -> Chrome -> Message: "Please switch to Sepolia".
-   - **Current State**: We have implemented case-insensitive numeric comparisons and a 1-second synchronization delay, but the loop persists for some users.
-   - **Goal for next session**: Investigate the timing between the MetaMask SDK provider update and the browser app state to finalize the mobile handoff.
-
-## � Technical Notes
+## 📋 Technical Notes
+- **Polling Logic**: `switchNetwork` now polls the chain ID up to 5 times with a 2-second interval to account for slow mobile browser/MetaMask app handoffs.
+- **Reload Prevention**: Disabled automatic page reloads on `chainChanged` to maintain voting state during programmatic network switching.
 - **Simulation**: Relayer simulation must always happen via `forwarder.execute.staticCall` to maintain the correct `_msgSender` context.
-- **Sync Delay**: Added `await new Promise(r => setTimeout(r, 1000))` in `switchNetwork` to combat slow mobile state synchronization.
