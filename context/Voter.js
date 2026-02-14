@@ -16,6 +16,7 @@ export const VotingProvider = ({ children }) => {
     const [voterAddress, setVoterAddress] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sdk, setSdk] = useState(null);
+    const [isRequesting, setIsRequesting] = useState(false); // New lock state
 
     const router = useRouter();
 
@@ -58,20 +59,27 @@ export const VotingProvider = ({ children }) => {
     };
 
     const connectWallet = async () => {
+        if (isRequesting) return;
         try {
             if (!sdk) return setError("Initializing MetaMask...");
             const ethereum = sdk.getProvider();
+
+            setIsRequesting(true);
+            setError("Opening MetaMask...");
 
             // Request accounts
             const accounts = await ethereum.request({ method: "eth_requestAccounts" });
             if (accounts && accounts.length) {
                 setCurrentAccount(accounts[0]);
+                setError("");
                 // Ensure switched to Sepolia
                 await switchNetwork();
             }
+            setIsRequesting(false);
         } catch (error) {
             console.log("Error connecting wallet:", error);
             setError("Connection failed. Please open MetaMask.");
+            setIsRequesting(false);
         }
     };
 
@@ -84,6 +92,7 @@ export const VotingProvider = ({ children }) => {
     };
 
     const switchNetwork = async () => {
+        if (isRequesting) return; // LOCK to prevent 'already pending'
         try {
             if (!sdk) return;
             const ethereum = sdk.getProvider();
@@ -94,13 +103,13 @@ export const VotingProvider = ({ children }) => {
 
             const currentChainId = await ethereum.request({ method: 'eth_chainId' });
             if (parseInt(currentChainId, 16) === targetChainIdDecimal) {
-                console.log("Already on Sepolia");
                 return;
             }
 
             console.log("Switching to Sepolia logic started...");
+            setIsRequesting(true);
             setIsLoading(true);
-            setError("Opening MetaMask for network switch...");
+            setError("Open MetaMask to switch network...");
 
             try {
                 await ethereum.request({
@@ -109,7 +118,6 @@ export const VotingProvider = ({ children }) => {
                 });
             } catch (switchError) {
                 if (switchError.code === 4902) {
-                    setError("Adding Sepolia network...");
                     await ethereum.request({
                         method: "wallet_addEthereumChain",
                         params: [
@@ -117,25 +125,23 @@ export const VotingProvider = ({ children }) => {
                                 chainId: targetChainId,
                                 chainName: "Sepolia Test Network",
                                 rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
-                                nativeCurrency: {
-                                    name: "Sepolia ETH",
-                                    symbol: "ETH",
-                                    decimals: 18,
-                                },
+                                nativeCurrency: { name: "Sepolia ETH", symbol: "ETH", decimals: 18 },
                                 blockExplorerUrls: ["https://sepolia.etherscan.io"],
                             },
                         ],
                     });
                 } else if (switchError.code === -32002) {
-                    setError("Request pending: Please open MetaMask and approve.");
-                    throw new Error("A request is already pending in MetaMask. Please open the app manually.");
+                    setError("MetaMask is busy. Please open it manually.");
+                    setIsRequesting(false);
+                    setIsLoading(false);
+                    return;
                 } else {
                     throw switchError;
                 }
             }
 
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 15;
             while (attempts < maxAttempts) {
                 console.log(`Syncing mobile network... attempt ${attempts + 1}/${maxAttempts}`);
                 const refreshedChainId = await ethereum.request({ method: 'eth_chainId' });
@@ -144,17 +150,20 @@ export const VotingProvider = ({ children }) => {
                     console.log("Network sync confirmed!");
                     setError("");
                     await new Promise(r => setTimeout(r, 1000));
+                    setIsRequesting(false);
                     return;
                 }
                 attempts++;
                 setError(`Synchronizing network (${attempts}/${maxAttempts})...`);
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 1200));
             }
 
-            throw new Error("Could not confirm network switch. Please check MetaMask manually.");
+            setError("Network switch timed out. Please refresh page.");
+            setIsRequesting(false);
         } catch (error) {
             console.error("Error in switchNetwork:", error);
             setError(error.message || "Network switch failed");
+            setIsRequesting(false);
             setIsLoading(false);
             throw error;
         }
