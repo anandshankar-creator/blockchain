@@ -385,53 +385,36 @@ export const VotingProvider = ({ children }) => {
     const giveVote = async (id) => {
         try {
             setIsLoading(true);
-            setError("");
+            setError("Preparing vote...");
             console.log("Voting for:", id);
 
-            await switchNetwork();
-            const provider = getProvider();
-
-            // Verify we are actually on Sepolia (0xaa36a7)
-            // On mobile, provider.getNetwork() can sometimes be stale, so we double-check via RPC
-            // Verify and Force Update Provider
-            let currentChainId = await sdk.getProvider().request({ method: 'eth_chainId' });
-            let isSepolia = (parseInt(currentChainId, 16) === 11155111);
-
-            if (!isSepolia) {
-                setError("Network mismatch. Retrying sync...");
-                await new Promise(r => setTimeout(r, 2000));
-                currentChainId = await sdk.getProvider().request({ method: 'eth_chainId' });
-                isSepolia = (parseInt(currentChainId, 16) === 11155111);
-
-                if (!isSepolia) {
-                    throw new Error("Mobile provider is still not seeing Sepolia. Please briefly open MetaMask and switch manually.");
-                }
-            }
-
-            // Create fresh provider for signing
+            // On mobile, asking for a fresh signer is enough to trigger redirection
             const browserProvider = new ethers.BrowserProvider(sdk.getProvider());
             const signer = await browserProvider.getSigner();
             const userAddress = await signer.getAddress();
             const network = await browserProvider.getNetwork();
 
-            console.log("Preparing Gasless Vote...");
+            console.log("Preparing Gasless Vote (Mobile-Optimized)...");
+            setError("Fetching blockchain state...");
 
-            const forwarder = new ethers.Contract(ForwarderAddress, ForwarderABI, provider);
+            // Use stable RPC to fetch nonce so we don't depend on the wallet network status yet
+            const readOnlyProvider = new ethers.JsonRpcProvider(RPC_URL);
+            const forwarder = new ethers.Contract(ForwarderAddress, ForwarderABI, readOnlyProvider);
             const nonce = await forwarder.nonces(userAddress);
 
             const votingInterface = new ethers.Interface(VotingAddressABI);
-
             const candidateAddress = id._address || id.address;
             const candidateId = id.candidateId || id.id;
-
             const functionData = votingInterface.encodeFunctionData("giveVote", [candidateAddress, candidateId]);
 
-            const chainId = network.chainId;
+            // HARDCODE chainId for signing. 
+            // If the wallet is on the wrong network, MetaMask will prompt a switch AUTOMATICALLY during signTypedData.
+            const targetChainId = 11155111;
 
             const domain = {
                 name: "VotingForwarder",
                 version: "1",
-                chainId: Number(chainId),
+                chainId: targetChainId,
                 verifyingContract: ForwarderAddress
             };
 
