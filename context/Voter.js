@@ -478,7 +478,7 @@ export const VotingProvider = ({ children }) => {
             setError("Broadcast successful! Locking your vote into the blockchain...");
 
             // 2. WAIT FOR TRUE CONFIRMATION
-            const receipt = await provider.waitForTransaction(result.txHash);
+            const receipt = await readOnlyProvider.waitForTransaction(result.txHash);
 
             if (receipt.status === 0) {
                 throw new Error("Blockchain execution failed. Vote not counted.");
