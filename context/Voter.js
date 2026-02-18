@@ -435,9 +435,25 @@ export const VotingProvider = ({ children }) => {
             const signer = await browserProvider.getSigner();
             const userAddress = await signer.getAddress();
 
-            // 2. Prepare Data (Off-chain)
             const readOnlyProvider = new ethers.JsonRpcProvider(RPC_URL);
             const forwarder = new ethers.Contract(ForwarderAddress, ForwarderABI, readOnlyProvider);
+
+            // PRE-VOTE CHECKS: Check registration and voted status from contract before signing
+            const votingContract = new ethers.Contract(VotingAddress, VotingAddressABI, readOnlyProvider);
+            const [vId, vName, vImg, vAddr, vAllowed, vVoted, vVote, vIpfs] = await votingContract.voters(userAddress);
+            const userVersion = await votingContract.voterElectionVersion(userAddress);
+            const currentElectionVersion = await votingContract.electionVersion();
+
+            if (userVersion.toString() !== currentElectionVersion.toString()) {
+                throw new Error("You are not registered for the current election. Please check your registration.");
+            }
+            if (vVoted) {
+                throw new Error("You have already voted in this election. One vote per person.");
+            }
+            if (vAllowed.toString() === "0") {
+                throw new Error("You do not have permission to vote. Please contact the administrator.");
+            }
+
             const nonce = await forwarder.nonces(userAddress);
 
             const votingInterface = new ethers.Interface(VotingAddressABI);

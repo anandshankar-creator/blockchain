@@ -15,13 +15,24 @@ Last Updated: 2026-02-14
    - Fixed React hydration and ReferenceErrors that were causing "White Screen" crashes on certain devices.
    - Added safety checks for the Ethereum provider to prevent crashes when MetaMask is initializing.
 
+## ⚡ Concurrency & Reliability (Feb 14 - Latest)
+1. **Relayer Concurrency Fix**:
+    - Implemented random jitter (0-1000ms) and a 5-attempt retry loop for relayer transaction nonces.
+    - This eliminates "Vote Rejected: Relay Internal Error" when multiple users vote from different devices at the same second on Vercel.
+2. **Pre-Vote Integrity Checks**:
+    - Added real-time contract checks in `Voter.js` before signing.
+    - Prevents "failed call()" errors by stopping voters who are not registered for the current version or have already voted before they even sign.
+3. **Improved Error Feedback**:
+    - Relayer now detects and reports if a vote fails due to previous completion or election reset, providing clear messages instead of generic "failed call()".
+
 ## 🐛 Resolved Issues
 1. **"Could not decode result data" (Mobile)**: Fixed by adding strict network validation before reading the nonce.
 2. **Button Double-Click Errors**: Resolved by locking the button UI during processing.
 3. **Session Stuck on Mobile**: Fixed by adding a session termination command to the logout process.
 4. **Mobile Network Switch Loop**: Resolved by removing `window.location.reload()` on chain changes and implementing a robust polling mechanism in `switchNetwork` to ensure provider synchronization on mobile.
+5. **Simultaneous Voting Errors**: Fixed nonce collisions caused by concurrent relay requests in serverless environments.
 
 ## 📋 Technical Notes
-- **Polling Logic**: `switchNetwork` now polls the chain ID up to 5 times with a 2-second interval to account for slow mobile browser/MetaMask app handoffs.
-- **Reload Prevention**: Disabled automatic page reloads on `chainChanged` to maintain voting state during programmatic network switching.
-- **Simulation**: Relayer simulation must always happen via `forwarder.execute.staticCall` to maintain the correct `_msgSender` context.
+- **Jitter Handling**: Staggering requests helps desynchronize the "pending" nonce fetch across different Vercel Lambdas.
+- **Relayer Simulation**: Always checks `voter_voted` and `electionVersion` before broadcasting to provide exact failure reasons.
+- **Voter registration**: If the organizer "Resets" the election, the version increments and ALL voters must be re-registered to vote in the new version.

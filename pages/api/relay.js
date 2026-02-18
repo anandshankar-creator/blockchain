@@ -23,12 +23,15 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Missing request or signature' });
     }
 
+    // 0. Jitter for Concurrency (Especially for Vercel Serverless)
+    // Helps stagger concurrent requests to avoid simultaneous 'pending' count collisions.
+    await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1000)));
+
     try {
-        // 1. Safety Guard: Check Relayer Balance (Throttle safely)
+        // 1. Safety Guard: Check Relayer Balance
         const balance = await provider.getBalance(wallet.address);
         if (balance < ethers.parseEther("0.02")) {
             console.warn("Relayer Low Balance:", ethers.formatEther(balance));
-            // Don't fail immediately if slightly low, but warn.
         }
 
         const forwardRequest = {
@@ -41,7 +44,7 @@ export default async function handler(req, res) {
             signature: signature
         };
 
-        // 2. Simulation (Crucial for error feedback)
+        // 2. Simulation
         try {
             await forwarder.execute.staticCall(forwardRequest, {
                 value: BigInt(request.value)
@@ -53,55 +56,34 @@ export default async function handler(req, res) {
             else if (simError.message && simError.message.includes("reverted")) {
                 const match = simError.message.match(/reverted with reason string '(.+)'/);
                 if (match) reason = match[1];
+                else if (simError.message.includes("FailedCall")) reason = "Vote failed in Voting contract. Did you already vote or reset the election?";
             }
             return res.status(400).json({ message: `Vote Rejected: ${reason}` });
         }
 
-        // 3. Serialized Nonce Allocation (Mutex)
-        // We lock ONLY the nonce fetching/incrementing part.
+        // 3. Broadcast with robust concurrent nonce handling
         let tx;
         let attempt = 0;
-        let currentNonce;
 
-        // Get initial nonce
-        await new Promise((resolve, reject) => {
-            nonceLock = nonceLock.then(async () => {
-                try {
-                    // Sync nonce if needed (first run or recovery)
-                    if (nextNonce === null) {
-                        nextNonce = await provider.getTransactionCount(wallet.address, "pending");
-                    }
+        // Always get the Freshest possible nonce
+        const baseNonce = await provider.getTransactionCount(wallet.address, "pending");
+        let targetNonce = baseNonce;
 
-                    currentNonce = nextNonce;
-                    nextNonce++; // Optimistally increment
-                    resolve();
-                } catch (err) {
-                    reject(err);
-                }
-            }).catch(reject); // Catch lock errors
-        });
-
-        // 4. Broadcast with Retry Logic
-        console.log(`Broadcasting Vote for ${request.from} with Nonce ${currentNonce}`);
-
-        while (attempt < 3) {
+        while (attempt < 5) {
             try {
-                // If this is a retry, we need to manually override the nonce
-                // The first attempt uses the locked nonce.
-                if (attempt > 0) {
-                    console.log(`Retry attempt ${attempt}: Incrementing nonce to ${currentNonce}`);
-                }
+                console.log(`Attempt ${attempt + 1}: Sending for ${request.from} with Nonce ${targetNonce}`);
 
                 tx = await forwarder.execute(forwardRequest, {
                     value: BigInt(request.value),
-                    nonce: currentNonce
+                    nonce: targetNonce,
+                    // Use a slightly higher gas price to ensure prioritize it and avoid "underpriced"
+                    gasPrice: (await provider.getFeeData()).gasPrice * 125n / 100n
                 });
 
-                // If success, break loop
-                break;
+                break; // Found it!
 
             } catch (broadcastError) {
-                const errMsg = broadcastError.message ? broadcastError.message.toLowerCase() : "";
+                const errMsg = (broadcastError.message || "").toLowerCase();
                 const isNonceIssue =
                     errMsg.includes("replacement transaction underpriced") ||
                     errMsg.includes("nonce too low") ||
@@ -110,27 +92,19 @@ export default async function handler(req, res) {
                     broadcastError.code === "REPLACEMENT_UNDERPRICED";
 
                 if (isNonceIssue) {
-                    currentNonce = currentNonce + 1; // Increment local nonce usage
-
-                    // Update global tracker too if possible, to help next request
-                    // We need to match the type (number)
-                    if (nextNonce !== null && nextNonce <= currentNonce) {
-                        nextNonce = currentNonce + 1;
-                    }
-
-                    console.warn(`Nonce Collision. Retrying with nonce ${currentNonce}...`);
+                    console.warn(`Nonce issue on attempt ${attempt + 1}. Retrying...`);
+                    targetNonce++;
                     attempt++;
+                    await new Promise(r => setTimeout(r, 200)); // Small delay
                 } else {
-                    // If it's a different error, fail immediately but try to reset nonce if 1st attempt
-                    if (attempt === 0) nextNonce = null;
                     throw broadcastError;
                 }
             }
         }
 
-        if (!tx) throw new Error("Failed to broadcast vote after retries.");
+        if (!tx) throw new Error("Failed to broadcast vote after maximum attempts.");
 
-        // 5. Success Response (Fast)
+        // 4. Success Response
         return res.status(200).json({
             success: true,
             txHash: tx.hash,
