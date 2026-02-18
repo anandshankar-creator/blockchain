@@ -60,7 +60,11 @@ export default async function handler(req, res) {
         // 3. Serialized Nonce Allocation (Mutex)
         // We lock ONLY the nonce fetching/incrementing part.
         let tx;
-        const txNonce = await new Promise((resolve, reject) => {
+        let attempt = 0;
+        let currentNonce;
+
+        // Get initial nonce
+        await new Promise((resolve, reject) => {
             nonceLock = nonceLock.then(async () => {
                 try {
                     // Sync nonce if needed (first run or recovery)
@@ -68,30 +72,63 @@ export default async function handler(req, res) {
                         nextNonce = await provider.getTransactionCount(wallet.address, "pending");
                     }
 
-                    const assignedNonce = nextNonce;
+                    currentNonce = nextNonce;
                     nextNonce++; // Optimistally increment
-                    resolve(assignedNonce);
+                    resolve();
                 } catch (err) {
                     reject(err);
                 }
             }).catch(reject); // Catch lock errors
         });
 
-        // 4. Broadcast
-        console.log(`Broadcasting Vote for ${request.from} with Nonce ${txNonce}`);
-        try {
-            tx = await forwarder.execute(forwardRequest, {
-                value: BigInt(request.value),
-                nonce: txNonce
-            });
-        } catch (broadcastError) {
-            // Critical: If broadcast fails specifically due to nonce, we MUST reset/re-sync
-            if (broadcastError.code === "NONCE_EXPIRED" || broadcastError.message.includes("nonce")) {
-                console.warn("Nonce mismatch detected. Resetting nonce cache.");
-                nextNonce = null;
+        // 4. Broadcast with Retry Logic
+        console.log(`Broadcasting Vote for ${request.from} with Nonce ${currentNonce}`);
+
+        while (attempt < 3) {
+            try {
+                // If this is a retry, we need to manually override the nonce
+                // The first attempt uses the locked nonce.
+                if (attempt > 0) {
+                    console.log(`Retry attempt ${attempt}: Incrementing nonce to ${currentNonce}`);
+                }
+
+                tx = await forwarder.execute(forwardRequest, {
+                    value: BigInt(request.value),
+                    nonce: currentNonce
+                });
+
+                // If success, break loop
+                break;
+
+            } catch (broadcastError) {
+                const errMsg = broadcastError.message ? broadcastError.message.toLowerCase() : "";
+                const isNonceIssue =
+                    errMsg.includes("replacement transaction underpriced") ||
+                    errMsg.includes("nonce too low") ||
+                    errMsg.includes("already known") ||
+                    broadcastError.code === "NONCE_EXPIRED" ||
+                    broadcastError.code === "REPLACEMENT_UNDERPRICED";
+
+                if (isNonceIssue) {
+                    currentNonce = currentNonce + 1; // Increment local nonce usage
+
+                    // Update global tracker too if possible, to help next request
+                    // We need to match the type (number)
+                    if (nextNonce !== null && nextNonce <= currentNonce) {
+                        nextNonce = currentNonce + 1;
+                    }
+
+                    console.warn(`Nonce Collision. Retrying with nonce ${currentNonce}...`);
+                    attempt++;
+                } else {
+                    // If it's a different error, fail immediately but try to reset nonce if 1st attempt
+                    if (attempt === 0) nextNonce = null;
+                    throw broadcastError;
+                }
             }
-            throw broadcastError;
         }
+
+        if (!tx) throw new Error("Failed to broadcast vote after retries.");
 
         // 5. Success Response (Fast)
         return res.status(200).json({
