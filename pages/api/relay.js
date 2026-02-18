@@ -24,11 +24,11 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Safety Guard: Check Relayer Balance
-        // We do this every request to ensure the 60th vote doesn't fail.
+        // 1. Safety Guard: Check Relayer Balance (Throttle safely)
         const balance = await provider.getBalance(wallet.address);
-        if (balance < ethers.parseEther("0.05")) { // Safe threshold for multiple votes
-            return res.status(500).json({ message: "Relayer low on ETH. Please top up relayer wallet." });
+        if (balance < ethers.parseEther("0.02")) {
+            console.warn("Relayer Low Balance:", ethers.formatEther(balance));
+            // Don't fail immediately if slightly low, but warn.
         }
 
         const forwardRequest = {
@@ -41,56 +41,67 @@ export default async function handler(req, res) {
             signature: signature
         };
 
-        // 2. Logic Guarantee: Simulation (Simulate THROUGH the forwarder)
+        // 2. Simulation (Crucial for error feedback)
         try {
-            // This tests everything: signature, nonce, and the actual vote logic
             await forwarder.execute.staticCall(forwardRequest, {
                 value: BigInt(request.value)
             });
         } catch (simError) {
             console.error("Simulation error:", simError);
-
-            // Extract the most readable error message
-            let reason = "Execution would fail (Check if you are registered and haven't voted)";
+            let reason = "Execution check failed. Only registered voters who haven't voted can vote.";
             if (simError.reason) reason = simError.reason;
-            else if (simError.message) {
+            else if (simError.message && simError.message.includes("reverted")) {
                 const match = simError.message.match(/reverted with reason string '(.+)'/);
                 if (match) reason = match[1];
             }
-
-            return res.status(400).json({ message: `Logic Error: ${reason}` });
+            return res.status(400).json({ message: `Vote Rejected: ${reason}` });
         }
 
-        // 3. Ultra-Fast Parallel Nonce Management
-        // We use a lock ONLY for the calculation of the nonce, not for the broadcast.
-        const txNonce = await new Promise((resolve) => {
+        // 3. Serialized Nonce Allocation (Mutex)
+        // We lock ONLY the nonce fetching/incrementing part.
+        let tx;
+        const txNonce = await new Promise((resolve, reject) => {
             nonceLock = nonceLock.then(async () => {
-                if (nextNonce === null) {
-                    nextNonce = await provider.getTransactionCount(wallet.address, "pending");
+                try {
+                    // Sync nonce if needed (first run or recovery)
+                    if (nextNonce === null) {
+                        nextNonce = await provider.getTransactionCount(wallet.address, "pending");
+                    }
+
+                    const assignedNonce = nextNonce;
+                    nextNonce++; // Optimistally increment
+                    resolve(assignedNonce);
+                } catch (err) {
+                    reject(err);
                 }
-                const assignedNonce = nextNonce;
-                nextNonce++;
-                resolve(assignedNonce);
-            });
+            }).catch(reject); // Catch lock errors
         });
 
-        // 4. FIRE AND FORGET (Broadcast Parallelly)
+        // 4. Broadcast
         console.log(`Broadcasting Vote for ${request.from} with Nonce ${txNonce}`);
-        const tx = await forwarder.execute(forwardRequest, {
-            value: BigInt(request.value),
-            nonce: txNonce
-        });
+        try {
+            tx = await forwarder.execute(forwardRequest, {
+                value: BigInt(request.value),
+                nonce: txNonce
+            });
+        } catch (broadcastError) {
+            // Critical: If broadcast fails specifically due to nonce, we MUST reset/re-sync
+            if (broadcastError.code === "NONCE_EXPIRED" || broadcastError.message.includes("nonce")) {
+                console.warn("Nonce mismatch detected. Resetting nonce cache.");
+                nextNonce = null;
+            }
+            throw broadcastError;
+        }
 
-        // We return the Hash instantly. The frontend will wait for the TRUE confirmation.
+        // 5. Success Response (Fast)
         return res.status(200).json({
             success: true,
-            txHash: tx.hash
+            txHash: tx.hash,
+            message: "Vote broadcasted successfully"
         });
 
     } catch (error) {
-        // Reset nonce on error to avoid gaps
-        nextNonce = null;
-        console.error("Relayer Error:", error.message);
-        return res.status(500).json({ success: false, error: error.message });
+        console.error("Relayer System Error:", error.message);
+        return res.status(500).json({ success: false, error: "Relay Internal Error: " + error.message });
     }
 }

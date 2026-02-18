@@ -74,6 +74,10 @@ export const VotingProvider = ({ children }) => {
                 setError("");
                 // Ensure switched to Sepolia
                 await switchNetwork();
+
+                // Refresh data after manual connect
+                getNewCandidate();
+                getAllVoterData();
             }
             setIsRequesting(false);
         } catch (error) {
@@ -88,7 +92,9 @@ export const VotingProvider = ({ children }) => {
             sdk.terminate();
         }
         setCurrentAccount("");
-        window.location.reload();
+        // No reload, just clear state
+        setCandidateArray([]);
+        setVoterArray([]);
     };
 
     const switchNetwork = async () => {
@@ -110,6 +116,21 @@ export const VotingProvider = ({ children }) => {
             setIsRequesting(true);
             setIsLoading(true);
             setError("Open MetaMask to switch network...");
+
+            // Mobile-Friendly: Check network on visibility change (User comes back from MM)
+            const checkNetworkOnFocus = async () => {
+                if (document.visibilityState === 'visible') {
+                    const chainId = await ethereum.request({ method: 'eth_chainId' });
+                    if (parseInt(chainId, 16) === targetChainIdDecimal) {
+                        setError("");
+                        setIsRequesting(false);
+                        setIsLoading(false);
+                        document.removeEventListener('visibilitychange', checkNetworkOnFocus);
+                    }
+                }
+            };
+            document.addEventListener('visibilitychange', checkNetworkOnFocus);
+
 
             try {
                 await ethereum.request({
@@ -140,32 +161,17 @@ export const VotingProvider = ({ children }) => {
                 }
             }
 
-            let attempts = 0;
-            const maxAttempts = 15;
-            while (attempts < maxAttempts) {
-                console.log(`Syncing mobile network... attempt ${attempts + 1}/${maxAttempts}`);
-                const refreshedChainId = await ethereum.request({ method: 'eth_chainId' });
-
-                if (parseInt(refreshedChainId, 16) === targetChainIdDecimal) {
-                    console.log("Network sync confirmed!");
-                    setError("");
-                    await new Promise(r => setTimeout(r, 1000));
-                    setIsRequesting(false);
-                    return;
-                }
-                attempts++;
-                setError(`Synchronizing network (${attempts}/${maxAttempts})...`);
-                await new Promise(r => setTimeout(r, 1200));
-            }
-
-            setError("Network switch timed out. Please refresh page.");
+            // Wait a bit for the switch to process
+            await new Promise(r => setTimeout(r, 2000));
             setIsRequesting(false);
+            setIsLoading(false);
+
         } catch (error) {
             console.error("Error in switchNetwork:", error);
             setError(error.message || "Network switch failed");
             setIsRequesting(false);
             setIsLoading(false);
-            throw error;
+            // Don't throw, just let the user try again
         }
     };
 
@@ -233,14 +239,15 @@ export const VotingProvider = ({ children }) => {
 
     // DATA FETCHING
     const getNewCandidate = async () => {
-        setIsLoading(true);
+        // Only show loading if we really need to block UI
+        // setIsLoading(true); 
         setError("");
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
 
             const allCandidate = await contract.getCandidate();
-            console.log("Fetched raw candidates:", allCandidate);
+            // console.log("Fetched raw candidates:", allCandidate);
 
             const data = [];
             for (const el of allCandidate) {
@@ -271,7 +278,7 @@ export const VotingProvider = ({ children }) => {
                 };
             });
 
-            console.log("Formatted candidate data:", formattedData);
+            // console.log("Formatted candidate data:", formattedData);
             setCandidateArray(formattedData);
             setCandidateLength(allCandidate.length);
         } catch (error) {
@@ -282,13 +289,13 @@ export const VotingProvider = ({ children }) => {
     };
 
     const getAllVoterData = async () => {
-        setIsLoading(true);
+        // setIsLoading(true);
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
 
             const voterListData = await contract.getVoterList();
-            console.log("Fetched raw voter list:", voterListData);
+            // console.log("Fetched raw voter list:", voterListData);
             setVoterAddress(voterListData);
             setVoterLength(voterListData.length);
 
@@ -318,7 +325,7 @@ export const VotingProvider = ({ children }) => {
                 }
             }
 
-            console.log("Formatted voter data:", allVoters);
+            // console.log("Formatted voter data:", allVoters);
             setVoterArray(allVoters);
         } catch (error) {
             console.log("Error fetching voters", error);
@@ -346,7 +353,21 @@ export const VotingProvider = ({ children }) => {
             const contract = fetchContract(signer);
 
             const tx = await contract.setCandidate(address, age, name, fileUrl, fileUrl);
-            await tx.wait();
+
+            // OPTIMISTIC UPDATE:
+            const newCandidate = {
+                age: age,
+                name: name,
+                candidateId: (candidateLength + 1).toString(), // Temporary ID
+                image: fileUrl,
+                voteCount: "0",
+                ipfs: fileUrl,
+                _address: address
+            };
+            setCandidateArray(prev => [...prev, newCandidate]);
+            setCandidateLength(prev => prev + 1);
+
+            await tx.wait(); // Wait for confirmation to be safe
 
             router.push('/');
         } catch (error) {
@@ -374,6 +395,20 @@ export const VotingProvider = ({ children }) => {
             const contract = fetchContract(signer);
 
             const tx = await contract.setVoter(address, name, fileUrl, fileUrl);
+
+            // OPTIMISTIC UPDATE:
+            const newVoter = {
+                id: (voterLength + 1).toString(), // Temporary ID
+                name: name,
+                image: fileUrl,
+                address: address,
+                ipfs: fileUrl,
+                voted: false,
+                allowed: "1"
+            };
+            setVoterArray(prev => [...prev, newVoter]);
+            setVoterLength(prev => prev + 1);
+
             await tx.wait();
 
             router.push('/voterList');
@@ -384,20 +419,23 @@ export const VotingProvider = ({ children }) => {
 
     const giveVote = async (id) => {
         try {
+            setError("");
             setIsLoading(true);
-            setError("Preparing vote...");
+
+            // 1. Initial Checks
+            if (!currentAccount) {
+                await connectWallet();
+                if (!currentAccount) throw new Error("Please connect your wallet first.");
+            }
+
             console.log("Voting for:", id);
 
             // On mobile, asking for a fresh signer is enough to trigger redirection
             const browserProvider = new ethers.BrowserProvider(sdk.getProvider());
             const signer = await browserProvider.getSigner();
             const userAddress = await signer.getAddress();
-            const network = await browserProvider.getNetwork();
 
-            console.log("Preparing Gasless Vote (Mobile-Optimized)...");
-            setError("Fetching blockchain state...");
-
-            // Use stable RPC to fetch nonce so we don't depend on the wallet network status yet
+            // 2. Prepare Data (Off-chain)
             const readOnlyProvider = new ethers.JsonRpcProvider(RPC_URL);
             const forwarder = new ethers.Contract(ForwarderAddress, ForwarderABI, readOnlyProvider);
             const nonce = await forwarder.nonces(userAddress);
@@ -407,8 +445,6 @@ export const VotingProvider = ({ children }) => {
             const candidateId = id.candidateId || id.id;
             const functionData = votingInterface.encodeFunctionData("giveVote", [candidateAddress, candidateId]);
 
-            // HARDCODE chainId for signing. 
-            // If the wallet is on the wrong network, MetaMask will prompt a switch AUTOMATICALLY during signTypedData.
             const targetChainId = 11155111;
 
             const domain = {
@@ -440,7 +476,12 @@ export const VotingProvider = ({ children }) => {
                 data: functionData
             };
 
-            // Capture signature (this pops up MetaMask)
+            setError("Please sign the vote request in MetaMask...");
+
+            // 3. User Signature (Triggers MetaMask)
+            // Add a little delay for mobile to switch context smoothly
+            await new Promise(r => setTimeout(r, 500));
+
             let signature;
             try {
                 signature = await signer.signTypedData(domain, types, req);
@@ -451,6 +492,8 @@ export const VotingProvider = ({ children }) => {
                 throw sigError;
             }
 
+            setError("Broadcasting vote...");
+
             const serializedReq = {
                 ...req,
                 value: req.value.toString(),
@@ -458,6 +501,7 @@ export const VotingProvider = ({ children }) => {
                 nonce: req.nonce.toString()
             };
 
+            // 4. Relay (Backend)
             const response = await fetch('/api/relay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -474,23 +518,30 @@ export const VotingProvider = ({ children }) => {
 
             console.log("Vote Pushed! TX:", result.txHash);
 
-            // 1. Show processing state
-            setError("Broadcast successful! Locking your vote into the blockchain...");
+            // 5. OPTIMISTIC SUCCESS (Immediate feedback)
+            // We do NOT wait for the block confirmation here. 
+            alert("✓ Vote Submitted! It will be confirmed purely on-chain in a few seconds.");
 
-            // 2. WAIT FOR TRUE CONFIRMATION
-            const receipt = await readOnlyProvider.waitForTransaction(result.txHash);
+            // Update local state optimistically to prevent double click (basic)
+            const updatedVoters = voterArray.map(v =>
+                v.address.toLowerCase() === userAddress.toLowerCase()
+                    ? { ...v, voted: true }
+                    : v
+            );
+            setVoterArray(updatedVoters);
 
-            if (receipt.status === 0) {
-                throw new Error("Blockchain execution failed. Vote not counted.");
-            }
+            // Trigger a background refresh after 15s
+            setTimeout(() => {
+                getNewCandidate();
+                getAllVoterData();
+            }, 15000);
 
-            alert("✓ Success! Your vote is officially recorded on the blockchain.");
-            window.location.reload();
+            setError("");
 
         } catch (error) {
             console.log("Voting Error:", error.message);
             setError(error.message);
-            alert("Voting Error: " + error.message);
+            // alert("Voting Error: " + error.message); // Optional: Don't alert if just "User Rejected"
         } finally {
             setIsLoading(false);
         }
@@ -506,7 +557,9 @@ export const VotingProvider = ({ children }) => {
             await tx.wait();
 
             alert("Election Reset Successfully!");
-            window.location.reload();
+            // Refresh logic instead of reload
+            getNewCandidate();
+            getAllVoterData();
         } catch (error) {
             console.error("Error resetting election", error);
             alert("Error: " + (error.reason || error.message));
