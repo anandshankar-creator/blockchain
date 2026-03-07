@@ -18,6 +18,7 @@ export const VotingProvider = ({ children }) => {
     const [sdk, setSdk] = useState(null);
     const [isRequesting, setIsRequesting] = useState(false); // New lock state
     const [adminAddress, setAdminAddress] = useState("");
+    const [actionMessage, setActionMessage] = useState(""); // Native bypass modal state
 
     const router = useRouter();
 
@@ -589,47 +590,55 @@ export const VotingProvider = ({ children }) => {
 
     const transferAdmin = async (newAdmin) => {
         if (!newAdmin || newAdmin.trim() === "") {
-            window.alert("Please provide a valid new admin address.");
+            setActionMessage("Error: Please provide a valid new admin address.");
             return;
         }
         try {
-            window.alert("Initializing MetaMask to Transfer Admin. Please approve the transaction popup.");
+            setActionMessage("Initializing MetaMask... Please open MetaMask and approve.");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
+            setActionMessage("Awaiting your signature in MetaMask to Transfer Admin...");
             const tx = await contract.transferAdmin(newAdmin);
 
-            window.alert("Transaction broadcasted! Waiting roughly 10 seconds for blockchain confirmation...");
+            setActionMessage("Transaction Broadcasted! Waiting 10s for blockchain confirmation...");
             await tx.wait();
 
-            window.alert("Success: Admin transferred successfully!");
-            window.location.reload();
+            setActionMessage("Success: Admin transferred successfully!");
+            setTimeout(() => {
+                setActionMessage("");
+                window.location.reload();
+            }, 3000);
         } catch (err) {
             console.error("Error transferring admin", err);
-            window.alert("Action Failed: " + (err.reason || err.message || "Unknown Error"));
+            setActionMessage("Error Failed: " + (err.reason || err.message || "Unknown Error"));
         }
     };
 
     const changeRelayer = async (newRelayer) => {
         if (!newRelayer || newRelayer.trim() === "") {
-            window.alert("Please provide a valid new relayer address.");
+            setActionMessage("Error: Please provide a valid new relayer address.");
             return;
         }
         try {
-            window.alert("Initializing MetaMask to Change Relayer. Please approve the transaction popup.");
+            setActionMessage("Initializing MetaMask... Please open MetaMask and approve.");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
+            setActionMessage("Awaiting your signature in MetaMask to Change Relayer...");
             const tx = await contract.changeRelayer(newRelayer);
 
-            window.alert("Transaction broadcasted! Waiting roughly 10 seconds for blockchain confirmation...");
+            setActionMessage("Transaction Broadcasted! Waiting 10s for blockchain confirmation...");
             await tx.wait();
 
-            window.alert("Success: Relayer changed successfully!");
-            window.location.reload();
+            setActionMessage("Success: Relayer changed successfully!");
+            setTimeout(() => {
+                setActionMessage("");
+                window.location.reload();
+            }, 3000);
         } catch (err) {
             console.error("Error changing relayer", err);
-            window.alert("Action Failed: " + (err.reason || err.message || "Unknown Error"));
+            setActionMessage("Error Failed: " + (err.reason || err.message || "Unknown Error"));
         }
     };
 
@@ -750,6 +759,28 @@ export const VotingProvider = ({ children }) => {
             }}
         >
             {children}
+            {actionMessage && (
+                <div style={{
+                    position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+                    backgroundColor: "rgba(0,0,0,0.85)", zIndex: 99999, display: "flex",
+                    flexDirection: "column", justifyContent: "center", alignItems: "center", color: "white"
+                }}>
+                    <div style={{
+                        background: "#1e1e1e", padding: "2rem", borderRadius: "10px",
+                        border: "1px solid #333", maxWidth: "80%", textAlign: "center", boxShadow: "0 0 20px rgba(155, 31, 233, 0.4)"
+                    }}>
+                        <h2 style={{ fontSize: "1.5rem", marginBottom: "1.5rem", lineHeight: "1.4" }}>{actionMessage}</h2>
+                        {(actionMessage.includes("Error") || actionMessage.includes("Success")) && (
+                            <button onClick={() => setActionMessage("")} style={{
+                                padding: "10px 25px", fontSize: "1.1rem", cursor: "pointer",
+                                background: "#9b1fe9", color: "white", border: "none", borderRadius: "5px", fontWeight: "bold"
+                            }}>
+                                Close
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
         </VotingContext.Provider>
     );
 };
