@@ -590,11 +590,12 @@ export const VotingProvider = ({ children }) => {
     const transferAdmin = async (newAdmin) => {
         if (!newAdmin || newAdmin.trim() === "") return alert("Please provide a valid new admin address.");
         try {
-            await switchNetwork();
+            alert("Please approve the Admin Change transaction in MetaMask...");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
             const tx = await contract.transferAdmin(newAdmin);
+            alert("Transaction submitted! Waiting for blockchain confirmation (approx 10 seconds)...");
             await tx.wait();
             alert("Admin transferred successfully!");
             getNewCandidate();
@@ -607,11 +608,12 @@ export const VotingProvider = ({ children }) => {
     const changeRelayer = async (newRelayer) => {
         if (!newRelayer || newRelayer.trim() === "") return alert("Please provide a valid new relayer address.");
         try {
-            await switchNetwork();
+            alert("Please approve the Relayer Change transaction in MetaMask...");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
             const tx = await contract.changeRelayer(newRelayer);
+            alert("Transaction submitted! Waiting for blockchain confirmation (approx 10 seconds)...");
             await tx.wait();
             alert("Relayer changed successfully!");
         } catch (error) {
