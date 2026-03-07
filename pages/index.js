@@ -57,7 +57,7 @@ const Home = () => {
                     </div>
                 )}
 
-                {isLoading ? (
+                {!isAdmin && isLoading ? (
                     <div className={styles.header_content} style={{ marginTop: '2rem' }}>
                         <h1>Loading Candidates...</h1>
                     </div>
@@ -76,6 +76,12 @@ const Home = () => {
                                 handleClick={() => giveVote({ id: el.candidateId, address: el._address })}
                             />
                         ))}
+                    </div>
+                )}
+
+                {!isAdmin && (
+                    <div style={{ marginTop: "3rem" }}>
+                        <TransactionHistory />
                     </div>
                 )}
             </div>
