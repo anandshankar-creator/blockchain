@@ -589,46 +589,47 @@ export const VotingProvider = ({ children }) => {
 
     const transferAdmin = async (newAdmin) => {
         if (!newAdmin || newAdmin.trim() === "") {
-            setError("Please provide a valid new admin address.");
+            window.alert("Please provide a valid new admin address.");
             return;
         }
         try {
-            setError("Please approve the Admin Change transaction in MetaMask...");
-            await switchNetwork();
+            window.alert("Initializing MetaMask to Transfer Admin. Please approve the transaction popup.");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
             const tx = await contract.transferAdmin(newAdmin);
-            setError("Transaction submitted! Waiting for blockchain confirmation (approx 10 seconds)...");
+
+            window.alert("Transaction broadcasted! Waiting roughly 10 seconds for blockchain confirmation...");
             await tx.wait();
-            setError("Admin transferred successfully!");
-            setTimeout(() => setError(""), 5000);
-            getNewCandidate();
+
+            window.alert("Success: Admin transferred successfully!");
+            window.location.reload();
         } catch (err) {
             console.error("Error transferring admin", err);
-            setError("Error: " + (err.reason || err.message || "Unknown Error"));
+            window.alert("Action Failed: " + (err.reason || err.message || "Unknown Error"));
         }
     };
 
     const changeRelayer = async (newRelayer) => {
         if (!newRelayer || newRelayer.trim() === "") {
-            setError("Please provide a valid new relayer address.");
+            window.alert("Please provide a valid new relayer address.");
             return;
         }
         try {
-            setError("Please approve the Relayer Change transaction in MetaMask...");
-            await switchNetwork();
+            window.alert("Initializing MetaMask to Change Relayer. Please approve the transaction popup.");
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
             const tx = await contract.changeRelayer(newRelayer);
-            setError("Transaction submitted! Waiting for blockchain confirmation (approx 10 seconds)...");
+
+            window.alert("Transaction broadcasted! Waiting roughly 10 seconds for blockchain confirmation...");
             await tx.wait();
-            setError("Relayer changed successfully!");
-            setTimeout(() => setError(""), 5000);
+
+            window.alert("Success: Relayer changed successfully!");
+            window.location.reload();
         } catch (err) {
             console.error("Error changing relayer", err);
-            setError("Error: " + (err.reason || err.message || "Unknown Error"));
+            window.alert("Action Failed: " + (err.reason || err.message || "Unknown Error"));
         }
     };
 
