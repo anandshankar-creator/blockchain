@@ -4,7 +4,6 @@ import { VotingContext } from '../context/Voter';
 import styles from '../styles/Home.module.css';
 import Card from '../components/Card';
 import NavBar from '../components/NavBar';
-import TransactionHistory from '../components/TransactionHistory';
 
 const Home = () => {
     const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, transferAdmin, changeRelayer, resetElection, isLoading } = useContext(VotingContext);
@@ -46,8 +45,6 @@ const Home = () => {
                             <input type="text" placeholder="New Relayer Address" value={newRelayer} onChange={(e) => setNewRelayer(e.target.value)} style={{ padding: "10px", width: "300px", marginRight: "10px" }} />
                             <button onClick={() => changeRelayer(newRelayer)} style={{ padding: "10px", cursor: "pointer" }}>Change Relayer</button>
                         </div>
-
-                        <TransactionHistory />
                     </div>
                 )}
 
@@ -76,12 +73,6 @@ const Home = () => {
                                 handleClick={() => giveVote({ id: el.candidateId, address: el._address })}
                             />
                         ))}
-                    </div>
-                )}
-
-                {!isAdmin && (
-                    <div style={{ marginTop: "3rem" }}>
-                        <TransactionHistory />
                     </div>
                 )}
             </div>
