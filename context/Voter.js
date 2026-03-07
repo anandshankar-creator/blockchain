@@ -42,6 +42,9 @@ export const VotingProvider = ({ children }) => {
     const fetchContract = (signerOrProvider) => new ethers.Contract(VotingAddress, VotingAddressABI, signerOrProvider);
 
     const getProvider = () => {
+        if (typeof window !== "undefined" && window.ethereum) {
+            return new ethers.BrowserProvider(window.ethereum);
+        }
         if (!sdk) throw new Error("MetaMask SDK not initialized");
         const ethereum = sdk.getProvider();
         return new ethers.BrowserProvider(ethereum);
