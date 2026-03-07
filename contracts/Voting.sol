@@ -32,6 +32,7 @@ contract Voting is ERC2771Context {
     event VoteCast(address voter, uint256 candidateId);
     event AdminChanged(address oldAdmin, address newAdmin);
     event RelayerChanged(address oldRelayer, address newRelayer);
+    event ElectionReset(uint256 newVersion);
 
     event CandidateCreate (
         uint256 indexed candidateId,
@@ -243,6 +244,8 @@ contract Voting is ERC2771Context {
 
         // Increment Election Version to invalidate old registrations
         electionVersion++;
+
+        emit ElectionReset(electionVersion);
     }
 
 }

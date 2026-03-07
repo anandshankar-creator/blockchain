@@ -622,8 +622,18 @@ export const VotingProvider = ({ children }) => {
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
 
             // Limit to roughly recent blocks or full history depending on node limits
-            // Using a permissive block range for testnet
-            const fromBlock = -10000; // Last 10k blocks, handle strictly in product
+            let fromBlock = -10000; // Last 10k blocks, handle strictly in product
+
+            // Check if there was an ElectionReset recently. If so, start fetching from that block.
+            try {
+                const resetFilter = contract.filters.ElectionReset();
+                const resetEvts = await contract.queryFilter(resetFilter, fromBlock, "latest");
+                if (resetEvts && resetEvts.length > 0) {
+                    fromBlock = resetEvts[resetEvts.length - 1].blockNumber;
+                }
+            } catch (err) {
+                // If the ABI doesn't have ElectionReset yet (e.g. before deploy), it will fail silently.
+            }
 
             const filterCandidates = contract.filters.CandidateCreated();
             const filterVoters = contract.filters.VoterRegistered();
