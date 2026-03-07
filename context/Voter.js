@@ -629,7 +629,7 @@ export const VotingProvider = ({ children }) => {
                 const resetFilter = contract.filters.ElectionReset();
                 const resetEvts = await contract.queryFilter(resetFilter, fromBlock, "latest");
                 if (resetEvts && resetEvts.length > 0) {
-                    fromBlock = resetEvts[resetEvts.length - 1].blockNumber;
+                    fromBlock = resetEvts[resetEvts.length - 1].blockNumber + 1;
                 }
             } catch (err) {
                 // If the ABI doesn't have ElectionReset yet (e.g. before deploy), it will fail silently.
