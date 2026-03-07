@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { VotingContext } from '../context/Voter';
-import styles from '../styles/TransactionHistory.module.css'; // Make sure this CSS exists!
+import styles from '../styles/TransactionHistory.module.css';
 
 const TransactionHistory = () => {
-    const { getTransactionHistory, currentAccount } = useContext(VotingContext);
+    const { getTransactionHistory, currentAccount, adminAddress } = useContext(VotingContext);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
     useEffect(() => {
         const fetchTxs = async () => {
@@ -17,12 +19,16 @@ const TransactionHistory = () => {
         fetchTxs();
     }, [getTransactionHistory]);
 
+    const filteredTransactions = isAdmin
+        ? transactions
+        : transactions.filter(tx => currentAccount && tx.details.toLowerCase().includes(currentAccount.toLowerCase()));
+
     return (
         <div className={styles.container}>
-            <h2>Transaction History</h2>
+            <h2>{isAdmin ? "Global Transaction History" : "My Transaction History"}</h2>
             {loading ? (
                 <p>Loading transactions...</p>
-            ) : transactions.length === 0 ? (
+            ) : filteredTransactions.length === 0 ? (
                 <p>No transactions found.</p>
             ) : (
                 <table className={styles.table}>
@@ -35,7 +41,7 @@ const TransactionHistory = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {transactions.map((tx, idx) => {
+                        {filteredTransactions.map((tx, idx) => {
                             const isMyTx = currentAccount && tx.details.toLowerCase().includes(currentAccount.toLowerCase());
                             return (
                                 <tr key={idx} style={isMyTx ? { backgroundColor: "#1e3a8a" } : {}}>
