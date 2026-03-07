@@ -618,33 +618,6 @@ export const VotingProvider = ({ children }) => {
         }
     };
 
-    const changeRelayer = async (newRelayer) => {
-        if (!newRelayer || newRelayer.trim() === "") {
-            setActionMessage("Error: Please provide a valid new relayer address.");
-            return;
-        }
-        try {
-            setActionMessage("Initializing MetaMask... Please open MetaMask and approve.");
-            const provider = getProvider();
-            const signer = await provider.getSigner();
-            const contract = fetchContract(signer);
-            setActionMessage("Awaiting your signature in MetaMask to Change Relayer...");
-            const tx = await contract.changeRelayer(newRelayer);
-
-            setActionMessage("Transaction Broadcasted! Waiting 10s for blockchain confirmation...");
-            await tx.wait();
-
-            setActionMessage("Success: Relayer changed successfully!");
-            setTimeout(() => {
-                setActionMessage("");
-                window.location.reload();
-            }, 3000);
-        } catch (err) {
-            console.error("Error changing relayer", err);
-            setActionMessage("Error Failed: " + (err.reason || err.message || "Unknown Error"));
-        }
-    };
-
     const getTransactionHistory = async () => {
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -748,7 +721,6 @@ export const VotingProvider = ({ children }) => {
                 giveVote,
                 resetElection,
                 transferAdmin,
-                changeRelayer,
                 getTransactionHistory,
                 currentAccount,
                 adminAddress,

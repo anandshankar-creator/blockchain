@@ -6,10 +6,9 @@ import Card from '../components/Card';
 import NavBar from '../components/NavBar';
 
 const Home = () => {
-    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, transferAdmin, changeRelayer, resetElection, isLoading } = useContext(VotingContext);
+    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, transferAdmin, resetElection, isLoading } = useContext(VotingContext);
 
     const [newAdmin, setNewAdmin] = useState("");
-    const [newRelayer, setNewRelayer] = useState("");
 
     const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
@@ -24,7 +23,7 @@ const Home = () => {
             <div className={styles.header}>
                 <div className={styles.header_content}>
                     <h1>{isAdmin ? "Admin Dashboard" : "Welcome to Decentralized Voting"}</h1>
-                    <p>{isAdmin ? "Manage the election, relayer system, and voters securely." : "Your vote matters. Secure, Transparent, and Immutable."}</p>
+                    <p>{isAdmin ? "Manage the election and voters securely." : "Your vote matters. Secure, Transparent, and Immutable."}</p>
                 </div>
             </div>
 
@@ -39,11 +38,6 @@ const Home = () => {
                         <div style={{ marginTop: "1rem" }}>
                             <input type="text" placeholder="New Admin Address" value={newAdmin} onChange={(e) => setNewAdmin(e.target.value)} style={{ padding: "10px", width: "300px", marginRight: "10px" }} />
                             <button onClick={() => transferAdmin(newAdmin)} style={{ padding: "10px", cursor: "pointer" }}>Transfer Admin</button>
-                        </div>
-
-                        <div style={{ marginTop: "1rem" }}>
-                            <input type="text" placeholder="New Relayer Address" value={newRelayer} onChange={(e) => setNewRelayer(e.target.value)} style={{ padding: "10px", width: "300px", marginRight: "10px" }} />
-                            <button onClick={() => changeRelayer(newRelayer)} style={{ padding: "10px", cursor: "pointer" }}>Change Relayer</button>
                         </div>
                     </div>
                 )}
@@ -76,7 +70,7 @@ const Home = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
