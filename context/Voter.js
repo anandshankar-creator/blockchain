@@ -598,6 +598,12 @@ export const VotingProvider = ({ children }) => {
         }
         try {
             setActionMessage("Initializing MetaMask... Please open MetaMask and approve.");
+
+            // Aggressive Wallet Wakeup to prevent blocked popups
+            if (typeof window !== "undefined" && window.ethereum) {
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+            }
+
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
