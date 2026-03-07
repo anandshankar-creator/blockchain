@@ -28,7 +28,8 @@
 
 .voterList__list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+    justify-content: center;
     gap: 3rem;
 }
 
@@ -44,7 +45,8 @@
     }
 
     .voterList__list {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 320px));
+        justify-content: center;
         gap: 2rem;
     }
 }
