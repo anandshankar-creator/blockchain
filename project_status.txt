@@ -1,38 +1,37 @@
 # 📋 Project Status: Decentralized Voting dApp
-Last Updated: 2026-02-14
+Last Updated: 2026-02-18
 
-## 🚀 Recent Accomplishments (Mobile & UI Enhancements)
-1. **Wallet Disconnect**:
-   - Implemented `disconnectWallet` using `sdk.terminate()` for a complete session logout on mobile devices.
-   - Added a red "Disconnect" button in the `NavBar`.
-2. **Relayer Logic Fixes**:
-   - Fixed "Logic Error: Unauthorized" by simulating transactions through the **Forwarder** contract instead of calling the Voting contract directly.
-   - Improved error reporting in the relayer to capture exact revert reasons from the blockchain.
-3. **Voting UX Improvements**:
-   - Added an "isLoading" state to the Vote buttons. The button now turns gray and shows **"Voting..."** to prevent double-clicks.
-   - Added specific error handling for MetaMask's `-32002` (request pending) error with helpful user instructions.
-4. **Site Stability**:
-   - Fixed React hydration and ReferenceErrors that were causing "White Screen" crashes on certain devices.
-   - Added safety checks for the Ethereum provider to prevent crashes when MetaMask is initializing.
-
-## ⚡ Concurrency & Reliability (Feb 14 - Latest)
-1. **Relayer Concurrency Fix**:
-    - Implemented random jitter (0-1000ms) and a 5-attempt retry loop for relayer transaction nonces.
-    - This eliminates "Vote Rejected: Relay Internal Error" when multiple users vote from different devices at the same second on Vercel.
-2. **Pre-Vote Integrity Checks**:
-    - Added real-time contract checks in `Voter.js` before signing.
-    - Prevents "failed call()" errors by stopping voters who are not registered for the current version or have already voted before they even sign.
-3. **Improved Error Feedback**:
-    - Relayer now detects and reports if a vote fails due to previous completion or election reset, providing clear messages instead of generic "failed call()".
+## 🚀 Recent Accomplishments (High-Concurrency & Reliability Fixes)
+1. **Relayer & Nonce Management**:
+   - Implemented **Random Jitter** (0-1000ms) to desynchronize concurrent serverless requests.
+   - Added a **5-attempt Retry Loop** for nonce collisions and "underpriced" errors.
+   - Boosted **Gas Pricing** by 25% to ensure immediate blockchain inclusion.
+2. **Pre-Vote Validity Checks**:
+   - Integrated real-time contract queries in `Voter.js` (frontend) to verify registration, allowed status, and "voted" status *before* signature prompting.
+   - Eliminates useless signing for voters who have already voted or are not registered for the current version.
+3. **Mobile & Network Resilience**:
+   - Fixed the "Network Loop" by replacing reloads with a smart polling mechanism in `switchNetwork`.
+   - Guaranteed clean sessions via `sdk.terminate()` in the disconnect flow.
+4. **Enhanced UI & Feedback**:
+   - Implemented **Optimistic UI Updates** for registration actions.
+   - Added automated **Fallback Avatars** for candidates with broken/slow IPFS images.
+   - Clearer error reporting: Opaque relay errors now translated to human-readable reasons (e.g., "Election has been reset").
 
 ## 🐛 Resolved Issues
-1. **"Could not decode result data" (Mobile)**: Fixed by adding strict network validation before reading the nonce.
-2. **Button Double-Click Errors**: Resolved by locking the button UI during processing.
-3. **Session Stuck on Mobile**: Fixed by adding a session termination command to the logout process.
-4. **Mobile Network Switch Loop**: Resolved by removing `window.location.reload()` on chain changes and implementing a robust polling mechanism in `switchNetwork` to ensure provider synchronization on mobile.
-5. **Simultaneous Voting Errors**: Fixed nonce collisions caused by concurrent relay requests in serverless environments.
+1. **Simultaneous Voting (Vote Rejection)**: Resolved "Nonce Race Conditions" in Vercel serverless functions that caused parallel votes to fail.
+2. **"failed call()" Opaque Errors**: Fixed by catching and decoding revert reasons during relayer simulation.
+3. **Double-Voting signature requests**: Prevented by checking the `voters` mapping before triggering MetaMask.
+4. **Broken Candidate Images**: Fixed using `ui-avatars.com` fallback logic.
+5. **Mobile Deep-Link Session Stuck**: Resolved by forcing session termination on disconnect.
+
+## 🛠️ Documentation & Transparency
+- Created **`BUG_FIX_SUMMARY_DETAILED.txt`**: A non-technical breakdown of all major system improvements.
+- Created **`concurrency_fix_walkthrough.md`**: Technical overview of the serverless nonce fix.
+- Updated **`PROJECT_EXPLANATION_FOR_BEGINNERS.txt`**: Kept core educational materials aligned with the new architecture.
 
 ## 📋 Technical Notes
-- **Jitter Handling**: Staggering requests helps desynchronize the "pending" nonce fetch across different Vercel Lambdas.
-- **Relayer Simulation**: Always checks `voter_voted` and `electionVersion` before broadcasting to provide exact failure reasons.
-- **Voter registration**: If the organizer "Resets" the election, the version increments and ALL voters must be re-registered to vote in the new version.
+- **Serverless Scaling**: The system is now tuned for Vercel's ephemeral nature; it no longer relies on in-memory locks which are ineffective in serverless.
+- **Gas Strategy**: Priority fees are now adjusted dynamically (+25%) to ensure high throughput for the 100-user test.
+- **Git State**: All changes (concurrency fixes, UI updates, documentation) are **Commited and Pushed** to the `main` branch.
+
+**Status: STABLE & READY for 100-user Stress Test.**

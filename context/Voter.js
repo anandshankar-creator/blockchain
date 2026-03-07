@@ -17,6 +17,7 @@ export const VotingProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [sdk, setSdk] = useState(null);
     const [isRequesting, setIsRequesting] = useState(false); // New lock state
+    const [adminAddress, setAdminAddress] = useState("");
 
     const router = useRouter();
 
@@ -245,6 +246,10 @@ export const VotingProvider = ({ children }) => {
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
+
+            // Fetch admin
+            const admin = await contract.votingOrganizer();
+            setAdminAddress(admin.toLowerCase());
 
             const allCandidate = await contract.getCandidate();
             // console.log("Fetched raw candidates:", allCandidate);
@@ -582,6 +587,75 @@ export const VotingProvider = ({ children }) => {
         }
     };
 
+    const transferAdmin = async (newAdmin) => {
+        try {
+            const provider = getProvider();
+            const signer = await provider.getSigner();
+            const contract = fetchContract(signer);
+            const tx = await contract.transferAdmin(newAdmin);
+            await tx.wait();
+            alert("Admin transferred successfully!");
+            getNewCandidate();
+        } catch (error) {
+            console.error("Error transferring admin", error);
+            alert("Error: " + (error.reason || error.message));
+        }
+    };
+
+    const changeRelayer = async (newRelayer) => {
+        try {
+            const provider = getProvider();
+            const signer = await provider.getSigner();
+            const contract = fetchContract(signer);
+            const tx = await contract.changeRelayer(newRelayer);
+            await tx.wait();
+            alert("Relayer changed successfully!");
+        } catch (error) {
+            console.error("Error changing relayer", error);
+            alert("Error: " + (error.reason || error.message));
+        }
+    };
+
+    const getTransactionHistory = async () => {
+        try {
+            const provider = new ethers.JsonRpcProvider(RPC_URL);
+            const contract = new ethers.Contract(VotingAddress, VotingAddressABI, provider);
+
+            // Limit to roughly recent blocks or full history depending on node limits
+            // Using a permissive block range for testnet
+            const fromBlock = -10000; // Last 10k blocks, handle strictly in product
+
+            const filterCandidates = contract.filters.CandidateCreated();
+            const filterVoters = contract.filters.VoterRegistered();
+            const filterVotes = contract.filters.VoteCast();
+            const filterAdmin = contract.filters.AdminChanged();
+            const filterRelayer = contract.filters.RelayerChanged();
+
+            const [candEvts, voterEvts, voteEvts, adminEvts, relayEvts] = await Promise.all([
+                contract.queryFilter(filterCandidates, fromBlock, "latest"),
+                contract.queryFilter(filterVoters, fromBlock, "latest"),
+                contract.queryFilter(filterVotes, fromBlock, "latest"),
+                contract.queryFilter(filterAdmin, fromBlock, "latest"),
+                contract.queryFilter(filterRelayer, fromBlock, "latest")
+            ]);
+
+            const history = [];
+
+            candEvts.forEach(e => history.push({ action: "Candidate Created", details: `Candidate ID: ${e.args[0]}, Name: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
+            voterEvts.forEach(e => history.push({ action: "Voter Registered", details: `Voter Address: ${e.args[0]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
+            voteEvts.forEach(e => history.push({ action: "Vote Cast", details: `Voter: ${e.args[0]}, Candidate ID: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
+            adminEvts.forEach(e => history.push({ action: "Admin Changed", details: `Old: ${e.args[0]}, New: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
+            relayEvts.forEach(e => history.push({ action: "Relayer Changed", details: `Old: ${e.args[0]}, New: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
+
+            // Sort by block number descending
+            history.sort((a, b) => b.blockNumber - a.blockNumber);
+            return history;
+        } catch (error) {
+            console.error("Error fetching history", error);
+            return [];
+        }
+    };
+
     useEffect(() => {
         if (!sdk) return;
         const ethereum = sdk.getProvider();
@@ -634,7 +708,11 @@ export const VotingProvider = ({ children }) => {
                 getNewCandidate,
                 giveVote,
                 resetElection,
+                transferAdmin,
+                changeRelayer,
+                getTransactionHistory,
                 currentAccount,
+                adminAddress,
                 candidateArray,
                 error,
                 getAllVoterData,

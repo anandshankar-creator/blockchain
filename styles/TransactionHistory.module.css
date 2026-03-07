@@ -1,0 +1,39 @@
+.container {
+    margin: 20px 0;
+    padding: 20px;
+    background: #111;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.table th,
+.table td {
+    border: 1px solid #333;
+    padding: 10px;
+    text-align: left;
+}
+
+.table th {
+    background: #222;
+    color: #0070f3;
+}
+
+.table tr:nth-child(even) {
+    background-color: #1a1a1a;
+}
+
+.table a {
+    color: #0070f3;
+    text-decoration: none;
+}
+
+.table a:hover {
+    text-decoration: underline;
+}

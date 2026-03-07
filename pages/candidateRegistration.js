@@ -15,7 +15,9 @@ const CandidateRegistration = () => {
     });
 
     const router = useRouter();
-    const { setCandidate, uploadToIPFSCandidate } = useContext(VotingContext);
+    const { setCandidate, uploadToIPFSCandidate, currentAccount, adminAddress } = useContext(VotingContext);
+
+    const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
     const onDrop = async (event) => {
         const file = event.target.files[0];
@@ -70,7 +72,11 @@ const CandidateRegistration = () => {
                             <Input inputType="number" title="Age" placeholder="Candidate Age" handleClick={(e) => handleFormFieldChange('age', e)} />
 
                             <div className={styles.Button}>
-                                <Button btnName="Authorize Candidate" handleClick={() => setCandidate(candidateForm, fileUrl, router)} />
+                                {isAdmin ? (
+                                    <Button btnName="Authorize Candidate" handleClick={() => setCandidate(candidateForm, fileUrl, router)} />
+                                ) : (
+                                    <p style={{ color: 'red' }}>Only Admin can register candidates.</p>
+                                )}
                             </div>
                         </div>
                     </div>

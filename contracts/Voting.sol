@@ -9,6 +9,7 @@ contract Voting is ERC2771Context {
     uint256 public electionVersion;
 
     address public votingOrganizer;
+    address public currentRelayer;
 
     // Mapping to track registration in the current election version
     mapping(address => uint256) public voterElectionVersion;
@@ -24,6 +25,13 @@ contract Voting is ERC2771Context {
         address _address;
         string ipfs;
     }
+
+    // Events
+    event CandidateCreated(uint256 candidateId, string name);
+    event VoterRegistered(address voter);
+    event VoteCast(address voter, uint256 candidateId);
+    event AdminChanged(address oldAdmin, address newAdmin);
+    event RelayerChanged(address oldRelayer, address newRelayer);
 
     event CandidateCreate (
         uint256 indexed candidateId,
@@ -67,7 +75,27 @@ contract Voting is ERC2771Context {
 
     constructor(address trustedForwarder) ERC2771Context(trustedForwarder) {
         votingOrganizer = _msgSender();
+        currentRelayer = _msgSender(); // Initially Admin is Relayer
         electionVersion = 1;
+    }
+
+    modifier onlyAdmin() {
+        require(votingOrganizer == _msgSender(), "Only admin can call this function");
+        _;
+    }
+
+    function transferAdmin(address newAdmin) public onlyAdmin {
+        require(newAdmin != address(0), "Invalid new admin address");
+        address oldAdmin = votingOrganizer;
+        votingOrganizer = newAdmin;
+        emit AdminChanged(oldAdmin, newAdmin);
+    }
+
+    function changeRelayer(address newRelayer) public onlyAdmin {
+        require(newRelayer != address(0), "Invalid new relayer address");
+        address oldRelayer = currentRelayer;
+        currentRelayer = newRelayer;
+        emit RelayerChanged(oldRelayer, newRelayer);
     }
 
     function setCandidate(address _address, string memory _age, string memory _name, string memory _image, string memory _ipfs) public {
@@ -98,6 +126,7 @@ contract Voting is ERC2771Context {
             _address,
             _ipfs
         );
+        emit CandidateCreated(idNumber, _name);
     }
 
     function getKey() public view returns (address[] memory) {
@@ -155,6 +184,7 @@ contract Voting is ERC2771Context {
             voter.voter_vote,
             _ipfs
         );
+        emit VoterRegistered(_address);
     }
 
     function giveVote(address _candidateAddress, uint256 _candidateVoteId) public {
@@ -169,6 +199,7 @@ contract Voting is ERC2771Context {
         votedVoters.push(_msgSender());
 
         candidates[_candidateAddress].voteCount += 1;
+        emit VoteCast(_msgSender(), _candidateVoteId);
     }
 
     function getVoterLength() public view returns (uint256) {

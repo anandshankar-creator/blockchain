@@ -15,7 +15,9 @@ const AllowedVoter = () => {
     });
 
     const router = useRouter();
-    const { uploadToIPFS, createVoter } = useContext(VotingContext);
+    const { uploadToIPFS, createVoter, currentAccount, adminAddress } = useContext(VotingContext);
+
+    const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
     const onDrop = async (event) => {
         const file = event.target.files[0];
@@ -56,7 +58,11 @@ const AllowedVoter = () => {
                             <Input inputType="text" title="Position" placeholder="Voter Position" handleClick={(e) => handleFormFieldChange('position', e)} />
 
                             <div className={styles.Button}>
-                                <Button btnName="Authorize Voter" handleClick={() => createVoter(formInput, fileUrl, router)} />
+                                {isAdmin ? (
+                                    <Button btnName="Authorize Voter" handleClick={() => createVoter(formInput, fileUrl, router)} />
+                                ) : (
+                                    <p style={{ color: 'red' }}>Only Admin can register voters.</p>
+                                )}
                             </div>
                         </div>
                     </div>
