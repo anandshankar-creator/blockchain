@@ -21,7 +21,11 @@ const TransactionHistory = () => {
 
     const filteredTransactions = isAdmin
         ? transactions
-        : transactions.filter(tx => currentAccount && tx.details.toLowerCase().includes(currentAccount.toLowerCase()));
+        : transactions.filter(tx =>
+            currentAccount &&
+            tx.action === "Vote Cast" &&
+            tx.details.toLowerCase().includes(currentAccount.toLowerCase())
+        );
 
     return (
         <div className={styles.container}>
