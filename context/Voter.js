@@ -588,7 +588,9 @@ export const VotingProvider = ({ children }) => {
     };
 
     const transferAdmin = async (newAdmin) => {
+        if (!newAdmin || newAdmin.trim() === "") return alert("Please provide a valid new admin address.");
         try {
+            await switchNetwork();
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
@@ -598,12 +600,14 @@ export const VotingProvider = ({ children }) => {
             getNewCandidate();
         } catch (error) {
             console.error("Error transferring admin", error);
-            alert("Error: " + (error.reason || error.message));
+            alert("Error: " + (error.reason || error.message || "Unknown Error"));
         }
     };
 
     const changeRelayer = async (newRelayer) => {
+        if (!newRelayer || newRelayer.trim() === "") return alert("Please provide a valid new relayer address.");
         try {
+            await switchNetwork();
             const provider = getProvider();
             const signer = await provider.getSigner();
             const contract = fetchContract(signer);
@@ -612,7 +616,7 @@ export const VotingProvider = ({ children }) => {
             alert("Relayer changed successfully!");
         } catch (error) {
             console.error("Error changing relayer", error);
-            alert("Error: " + (error.reason || error.message));
+            alert("Error: " + (error.reason || error.message || "Unknown Error"));
         }
     };
 
