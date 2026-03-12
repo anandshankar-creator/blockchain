@@ -14,6 +14,7 @@ import {
     Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
     CategoryScale,
@@ -21,7 +22,8 @@ ChartJS.register(
     BarElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ChartDataLabels
 );
 
 const Home = () => {
@@ -58,8 +60,7 @@ const Home = () => {
                                         label: 'Total Votes',
                                         data: candidateArray.map(el => el.voteCount),
                                         backgroundColor: 'rgba(155, 31, 233, 0.6)',
-                                        borderColor: 'rgba(155, 31, 233, 1)',
-                                        borderWidth: 1,
+                                        borderWidth: 0, // Remove bar border
                                         barThickness: 50, // Constant width
                                         maxBarThickness: 70, // Safety limit
                                     },
@@ -74,16 +75,24 @@ const Home = () => {
                                             color: '#fff'
                                         }
                                     },
+                                    datalabels: {
+                                        display: true,
+                                        anchor: 'end',
+                                        align: 'top',
+                                        color: '#fff',
+                                        font: {
+                                            weight: 'bold',
+                                            size: 14
+                                        },
+                                        formatter: (value) => value
+                                    }
                                 },
                                 scales: {
                                     y: {
                                         beginAtZero: true,
-                                        ticks: {
-                                            color: '#fff',
-                                            stepSize: 1
-                                        },
+                                        display: false, // Hide y-axis entirely
                                         grid: {
-                                            color: 'rgba(255, 255, 255, 0.1)'
+                                            display: false
                                         }
                                     },
                                     x: {
@@ -91,7 +100,10 @@ const Home = () => {
                                             color: '#fff'
                                         },
                                         grid: {
-                                            color: 'rgba(255, 255, 255, 0.1)'
+                                            display: false // Hide x-axis grid
+                                        },
+                                        border: {
+                                            display: false // Hide axis line
                                         }
                                     }
                                 }
