@@ -83,3 +83,25 @@
         gap: 1.5rem;
     }
 }
+
+.chart_section {
+    background: rgba(30, 30, 30, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem auto 4rem;
+    max-width: 1000px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.chart_section h2 {
+    margin-bottom: 2rem;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    background: linear-gradient(90deg, #fff, #9b1fe9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
