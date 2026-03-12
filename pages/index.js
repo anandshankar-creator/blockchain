@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import NavBar from '../components/NavBar';
 
 const Home = () => {
-    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, resetElection, isLoading } = useContext(VotingContext);
+    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, isLoading } = useContext(VotingContext);
 
     const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
@@ -26,14 +26,7 @@ const Home = () => {
             </div>
 
             <div className={styles.container}>
-                {isAdmin && (
-                    <div style={{ marginBottom: "2rem", padding: "1rem", background: "#2a2a2a", borderRadius: "10px", color: "white" }}>
-                        <h2>Admin Controls</h2>
-                        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-                            <button onClick={resetElection} style={{ background: "red", padding: "10px", border: "none", color: "white", borderRadius: "5px", cursor: "pointer" }}>Reset Election</button>
-                        </div>
-                    </div>
-                )}
+
 
                 {!isAdmin && (
                     <div className={styles.header_content} style={{ marginTop: '1rem', marginBottom: '2rem' }}>
