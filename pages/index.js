@@ -60,6 +60,8 @@ const Home = () => {
                                         backgroundColor: 'rgba(155, 31, 233, 0.6)',
                                         borderColor: 'rgba(155, 31, 233, 1)',
                                         borderWidth: 1,
+                                        barThickness: 50, // Constant width
+                                        maxBarThickness: 70, // Safety limit
                                     },
                                 ],
                             }}
