@@ -591,38 +591,7 @@ export const VotingProvider = ({ children }) => {
         }
     };
 
-    const transferAdmin = async (newAdmin) => {
-        if (!newAdmin || newAdmin.trim() === "") {
-            setActionMessage("Error: Please provide a valid new admin address.");
-            return;
-        }
-        try {
-            setActionMessage("Initializing MetaMask... Please open MetaMask and approve.");
 
-            // Aggressive Wallet Wakeup to prevent blocked popups
-            if (typeof window !== "undefined" && window.ethereum) {
-                await window.ethereum.request({ method: "eth_requestAccounts" });
-            }
-
-            const provider = getProvider();
-            const signer = await provider.getSigner();
-            const contract = fetchContract(signer);
-            setActionMessage("Awaiting your signature in MetaMask to Transfer Admin...");
-            const tx = await contract.transferAdmin(newAdmin);
-
-            setActionMessage("Transaction Broadcasted! Waiting 10s for blockchain confirmation...");
-            await tx.wait();
-
-            setActionMessage("Success: Admin transferred successfully!");
-            setTimeout(() => {
-                setActionMessage("");
-                window.location.reload();
-            }, 3000);
-        } catch (err) {
-            console.error("Error transferring admin", err);
-            setActionMessage("Error Failed: " + (err.reason || err.message || "Unknown Error"));
-        }
-    };
 
     const getTransactionHistory = async () => {
         try {
@@ -646,14 +615,12 @@ export const VotingProvider = ({ children }) => {
             const filterCandidates = contract.filters.CandidateCreated();
             const filterVoters = contract.filters.VoterRegistered();
             const filterVotes = contract.filters.VoteCast();
-            const filterAdmin = contract.filters.AdminChanged();
             const filterRelayer = contract.filters.RelayerChanged();
 
-            const [candEvts, voterEvts, voteEvts, adminEvts, relayEvts] = await Promise.all([
+            const [candEvts, voterEvts, voteEvts, relayEvts] = await Promise.all([
                 contract.queryFilter(filterCandidates, fromBlock, "latest"),
                 contract.queryFilter(filterVoters, fromBlock, "latest"),
                 contract.queryFilter(filterVotes, fromBlock, "latest"),
-                contract.queryFilter(filterAdmin, fromBlock, "latest"),
                 contract.queryFilter(filterRelayer, fromBlock, "latest")
             ]);
 
@@ -662,7 +629,6 @@ export const VotingProvider = ({ children }) => {
             candEvts.forEach(e => history.push({ action: "Candidate Created", details: `Candidate ID: ${e.args[0]}, Name: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
             voterEvts.forEach(e => history.push({ action: "Voter Registered", details: `Voter Address: ${e.args[0]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
             voteEvts.forEach(e => history.push({ action: "Vote Cast", details: `Voter: ${e.args[0]}, Candidate ID: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
-            adminEvts.forEach(e => history.push({ action: "Admin Changed", details: `Old: ${e.args[0]}, New: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
             relayEvts.forEach(e => history.push({ action: "Relayer Changed", details: `Old: ${e.args[0]}, New: ${e.args[1]}`, txHash: e.transactionHash, blockNumber: e.blockNumber }));
 
             // Sort by block number descending
@@ -726,7 +692,6 @@ export const VotingProvider = ({ children }) => {
                 getNewCandidate,
                 giveVote,
                 resetElection,
-                transferAdmin,
                 getTransactionHistory,
                 currentAccount,
                 adminAddress,

@@ -30,7 +30,6 @@ contract Voting is ERC2771Context {
     event CandidateCreated(uint256 candidateId, string name);
     event VoterRegistered(address voter);
     event VoteCast(address voter, uint256 candidateId);
-    event AdminChanged(address oldAdmin, address newAdmin);
     event RelayerChanged(address oldRelayer, address newRelayer);
     event ElectionReset(uint256 newVersion);
 
@@ -85,12 +84,6 @@ contract Voting is ERC2771Context {
         _;
     }
 
-    function transferAdmin(address newAdmin) public onlyAdmin {
-        require(newAdmin != address(0), "Invalid new admin address");
-        address oldAdmin = votingOrganizer;
-        votingOrganizer = newAdmin;
-        emit AdminChanged(oldAdmin, newAdmin);
-    }
 
     function changeRelayer(address newRelayer) public onlyAdmin {
         require(newRelayer != address(0), "Invalid new relayer address");

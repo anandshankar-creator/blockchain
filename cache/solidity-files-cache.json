@@ -680,8 +680,8 @@
       ]
     },
     "D:\\pro\\contracts\\Voting.sol": {
-      "lastModificationDate": 1772919440664,
-      "contentHash": "d214b0b1c36f9ce8f8c08479beb2da7f",
+      "lastModificationDate": 1773297295107,
+      "contentHash": "ef93c517317c50d5da41bba34da4b7b5",
       "sourceName": "contracts/Voting.sol",
       "solcConfig": {
         "version": "0.8.20",

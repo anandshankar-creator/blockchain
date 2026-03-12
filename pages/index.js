@@ -6,9 +6,7 @@ import Card from '../components/Card';
 import NavBar from '../components/NavBar';
 
 const Home = () => {
-    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, transferAdmin, resetElection, isLoading } = useContext(VotingContext);
-
-    const [newAdmin, setNewAdmin] = useState("");
+    const { getNewCandidate, candidateArray, giveVote, checkIfWalletIsConnected, currentAccount, adminAddress, resetElection, isLoading } = useContext(VotingContext);
 
     const isAdmin = currentAccount && adminAddress && currentAccount.toLowerCase() === adminAddress.toLowerCase();
 
@@ -33,11 +31,6 @@ const Home = () => {
                         <h2>Admin Controls</h2>
                         <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
                             <button onClick={resetElection} style={{ background: "red", padding: "10px", border: "none", color: "white", borderRadius: "5px", cursor: "pointer" }}>Reset Election</button>
-                        </div>
-
-                        <div style={{ marginTop: "1rem" }}>
-                            <input type="text" placeholder="New Admin Address" value={newAdmin} onChange={(e) => setNewAdmin(e.target.value)} style={{ padding: "10px", width: "300px", marginRight: "10px" }} />
-                            <button onClick={() => transferAdmin(newAdmin)} style={{ padding: "10px", cursor: "pointer" }}>Transfer Admin</button>
                         </div>
                     </div>
                 )}
