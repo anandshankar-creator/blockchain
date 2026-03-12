@@ -45,7 +45,7 @@ const Home = () => {
                                 key={i + 1}
                                 image={el.image}
                                 name={el.name}
-                                role={el.age} // Using age as role/description placeholder based on contract struct
+                                role={`Age: ${el.age}`} // Shows age explicitly
                                 address={el._address}
                                 voteCount={el.voteCount}
                                 showVoteBtn={!isAdmin} // Only show if not admin, or we can keep it for admin to test

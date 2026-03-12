@@ -386,8 +386,8 @@ export const VotingProvider = ({ children }) => {
     };
 
     const createVoter = async (formInput, fileUrl, router) => {
-        const { name, address, position } = formInput;
-        if (!name || !address || !position || !fileUrl) return setError("Missing Inputs");
+        const { name, address, department } = formInput;
+        if (!name || !address || !department || !fileUrl) return setError("Missing Inputs");
         setError("");
 
         try {

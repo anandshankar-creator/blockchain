@@ -11,7 +11,7 @@ const AllowedVoter = () => {
     const [formInput, setFormInput] = useState({
         name: '',
         address: '',
-        position: '',
+        department: '',
     });
 
     const router = useRouter();
@@ -55,7 +55,7 @@ const AllowedVoter = () => {
                         <div className={styles.voter__container__box__div}>
                             <Input inputType="text" title="Name" placeholder="Voter Name" handleClick={(e) => handleFormFieldChange('name', e)} />
                             <Input inputType="text" title="Address" placeholder="Voter Address" handleClick={(e) => handleFormFieldChange('address', e)} />
-                            <Input inputType="text" title="Position" placeholder="Voter Position" handleClick={(e) => handleFormFieldChange('position', e)} />
+                            <Input inputType="text" title="Department" placeholder="Voter Department" handleClick={(e) => handleFormFieldChange('department', e)} />
 
                             <div className={styles.Button}>
                                 {isAdmin ? (
