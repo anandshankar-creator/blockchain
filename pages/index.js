@@ -47,7 +47,7 @@ const Home = () => {
                                 name={el.name}
                                 role={`Age: ${el.age}`} // Shows age explicitly
                                 address={el._address}
-                                voteCount={el.voteCount}
+                                voteCount={isAdmin ? el.voteCount : undefined}
                                 showVoteBtn={!isAdmin} // Only show if not admin, or we can keep it for admin to test
                                 isLoading={isLoading}
                                 handleClick={() => giveVote({ id: el.candidateId, address: el._address })}
